@@ -45,7 +45,16 @@ export default function Layout() {
   }, [setUser, navigate]);
 
   const handleLogin = async () => {
-    await googleSignIn();
+    try {
+      await googleSignIn();
+    } catch (error: any) {
+      console.error('Login error:', error);
+      if (error.code === 'auth/unauthorized-domain') {
+        alert('登入失敗：這個網域尚未被授權。如果您已經部署到 Vercel，請至 Firebase 控制台 (Authentication -> Settings -> Authorized domains) 加入您的 Vercel 網址。');
+      } else {
+        alert(`登入發生錯誤: ${error.message || '請稍後再試'}`);
+      }
+    }
   };
 
   const handleLogout = async () => {
