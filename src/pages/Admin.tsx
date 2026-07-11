@@ -11,6 +11,7 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState('orders');
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [settings, setSettings] = useState({ spreadsheetId: '' });
   const [newProduct, setNewProduct] = useState({ name: '', description: '', price: 0, stock: 0, imageBase64: '', category: '' });
 
@@ -23,12 +24,15 @@ export default function Admin() {
       docs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setOrders(docs);
     });
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
+      setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
     
     getDoc(doc(db, 'settings', 'global')).then(snap => {
       if (snap.exists()) setSettings(snap.data() as any);
     });
 
-    return () => { unsubProducts(); unsubOrders(); };
+    return () => { unsubProducts(); unsubOrders(); unsubUsers(); };
   }, [userRole]);
 
   // Background worker for processing pending orders
@@ -138,8 +142,52 @@ export default function Admin() {
       <div className="flex gap-6 border-b border-slate-200 mb-8">
         <button onClick={() => setActiveTab('orders')} className={`pb-4 px-2 font-bold text-sm tracking-wide ${activeTab === 'orders' ? 'border-b-2 border-emerald-600 text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}>最新訂單處理</button>
         <button onClick={() => setActiveTab('products')} className={`pb-4 px-2 font-bold text-sm tracking-wide ${activeTab === 'products' ? 'border-b-2 border-emerald-600 text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}>商品目錄管理</button>
+        <button onClick={() => setActiveTab('customers')} className={`pb-4 px-2 font-bold text-sm tracking-wide ${activeTab === 'customers' ? 'border-b-2 border-emerald-600 text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}>客戶資料</button>
         <button onClick={() => setActiveTab('settings')} className={`pb-4 px-2 font-bold text-sm tracking-wide ${activeTab === 'settings' ? 'border-b-2 border-emerald-600 text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}>系統設定</button>
       </div>
+
+      {activeTab === 'customers' && (
+        <div className="flex-1 bg-white rounded-2xl border border-slate-200 p-6 flex flex-col shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-slate-800">客戶與會員資料</h3>
+          </div>
+          <div className="flex-1 overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="text-[10px] text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
+                  <th className="py-2">姓名/店名</th>
+                  <th className="py-2">聯絡電話</th>
+                  <th className="py-2">收件地址</th>
+                  <th className="py-2">Email</th>
+                  <th className="py-2">會員狀態</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                {users.map(u => (
+                  <tr key={u.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                    <td className="py-4 font-bold text-slate-700">{u.storeName || u.name}</td>
+                    <td className="py-4 text-slate-600">{u.phone || '-'}</td>
+                    <td className="py-4 text-slate-600">{u.address || '-'}</td>
+                    <td className="py-4 text-slate-500">{u.email}</td>
+                    <td className="py-4">
+                      {u.isProfileComplete ? (
+                         <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold">資料完整</span>
+                      ) : (
+                         <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold">未填寫完整</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {users.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-slate-500 font-medium">目前沒有客戶資料</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'orders' && (
         <div className="flex-1 bg-white rounded-2xl border border-slate-200 p-6 flex flex-col shadow-sm">

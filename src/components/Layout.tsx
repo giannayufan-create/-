@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { initAuth, googleSignIn, logout, db } from '../lib/firebase';
 import { useStore } from '../lib/store';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { ShoppingCart, LayoutDashboard, User as UserIcon, LogOut, Package, Store } from 'lucide-react';
 
 export default function Layout() {
@@ -15,24 +15,29 @@ export default function Layout() {
       const userRef = doc(db, 'users', authUser.uid);
       const userSnap = await getDoc(userRef);
       let role: 'admin' | 'member' = 'member';
+      let userData: any = null;
       
       if (!userSnap.exists()) {
         // Create user
-        await setDoc(userRef, {
+        const newUserData = {
           role: 'member',
           name: authUser.displayName || 'Anonymous',
           email: authUser.email,
           points: 0,
+          isProfileComplete: false,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
-        });
+        };
+        await setDoc(userRef, newUserData);
+        userData = newUserData;
       } else {
-        role = userSnap.data().role;
+        userData = userSnap.data();
+        role = userData.role;
       }
       
-      setUser(authUser, role, token);
+      setUser(authUser, role, token, userData);
     }, () => {
-      setUser(null, null, null);
+      setUser(null, null, null, null);
       navigate('/');
     });
 
@@ -50,8 +55,63 @@ export default function Layout() {
 
   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
 
+  const [setupData, setSetupData] = useState({ name: '', phone: '', address: '', storeName: '' });
+  const [isSubmittingSetup, setIsSubmittingSetup] = useState(false);
+
+  const handleProfileSetup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setIsSubmittingSetup(true);
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      const updates = {
+        name: setupData.name,
+        phone: setupData.phone,
+        address: setupData.address,
+        storeName: setupData.storeName,
+        isProfileComplete: true,
+        updatedAt: new Date().toISOString()
+      };
+      await updateDoc(userRef, updates);
+      // Update local store
+      setUser(user, userRole, useStore.getState().accessToken, { ...useStore.getState().userData, ...updates });
+    } catch (error) {
+      console.error('Setup error:', error);
+      alert('儲存失敗');
+    } finally {
+      setIsSubmittingSetup(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+      {/* Profile Setup Modal */}
+      {useStore.getState().userData && !useStore.getState().userData?.isProfileComplete && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">歡迎來到 FreshFlow OS!</h2>
+            <p className="text-slate-500 mb-6 text-sm">請完成您的個人或店家資料以開始使用。</p>
+            <form onSubmit={handleProfileSetup} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1">姓名或店名</label>
+                <input required type="text" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 focus:outline-none" value={setupData.name} onChange={e => setSetupData({...setupData, name: e.target.value})} placeholder="輸入姓名或店名" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1">聯絡電話</label>
+                <input required type="tel" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 focus:outline-none" value={setupData.phone} onChange={e => setSetupData({...setupData, phone: e.target.value})} placeholder="例如: 0912345678" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1">地址</label>
+                <input required type="text" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 focus:outline-none" value={setupData.address} onChange={e => setSetupData({...setupData, address: e.target.value})} placeholder="輸入收件地址" />
+              </div>
+              <button disabled={isSubmittingSetup} type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-emerald-600/20 transition-all mt-4">
+                {isSubmittingSetup ? '儲存中...' : '完成設定'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       <nav className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
         <div className="flex items-center gap-3">
           <Link to="/" className="flex items-center gap-3">

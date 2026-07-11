@@ -11,10 +11,11 @@ interface CartItem {
 interface AppState {
   user: User | null;
   userRole: 'admin' | 'member' | null;
+  userData: any | null;
   accessToken: string | null;
   cart: CartItem[];
   cartTotal: number;
-  setUser: (user: User | null, role: 'admin' | 'member' | null, token: string | null) => void;
+  setUser: (user: User | null, role: 'admin' | 'member' | null, token: string | null, userData?: any) => void;
   addToCart: (item: CartItem) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
@@ -24,10 +25,11 @@ interface AppState {
 export const useStore = create<AppState>((set, get) => ({
   user: null,
   userRole: null,
+  userData: null,
   accessToken: null,
   cart: [],
   cartTotal: 0,
-  setUser: (user, role, token) => set({ user, userRole: role, accessToken: token }),
+  setUser: (user, role, token, userData) => set({ user, userRole: role, accessToken: token, userData }),
   addToCart: (item) => set((state) => {
     const existing = state.cart.find(i => i.productId === item.productId);
     let newCart = [];

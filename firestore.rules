@@ -18,11 +18,12 @@ service cloud.firestore {
     // users/{userId}
     match /users/{userId} {
       function isValidUser(data) {
-        return data.keys().hasAll(['role', 'name', 'email', 'points', 'createdAt']) &&
+        return data.keys().hasAll(['role', 'name', 'email', 'points', 'createdAt', 'isProfileComplete']) &&
                data.role in ['admin', 'member'] &&
                data.name is string && data.name.size() <= 100 &&
                data.email is string && data.email.size() <= 150 &&
                data.points is number && data.points >= 0 &&
+               data.isProfileComplete is bool &&
                data.createdAt == request.time;
       }
       function isValidUserUpdate(data) {
@@ -38,7 +39,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidUser(incoming()) && incoming().role == 'member' && incoming().points == 0;
       
       allow update: if isSignedIn() && request.auth.uid == userId && isValidUserUpdate(incoming()) && (
-        (incoming().diff(existing()).affectedKeys().hasOnly(['name', 'updatedAt'])) ||
+        (incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'address', 'storeName', 'isProfileComplete', 'updatedAt'])) ||
         (isAdmin())
       );
     }
