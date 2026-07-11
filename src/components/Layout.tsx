@@ -110,6 +110,19 @@ export default function Layout() {
       <main className="flex-1 p-8 w-full max-w-7xl mx-auto flex flex-col">
         <Outlet />
       </main>
+
+      {/* Footer Status Bar */}
+      <footer className="h-8 bg-slate-800 text-slate-400 px-8 flex items-center justify-between text-[10px] tracking-wide shrink-0">
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> 線上服務正常</span>
+          <span className="text-slate-600">|</span>
+          <span>Google AI Studio 即時預覽</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <span>支援導出至 GitHub / Vercel 部署</span>
+          <span>v1.0.0-stable</span>
+        </div>
+      </footer>
     </div>
   );
 }
