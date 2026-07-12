@@ -6,7 +6,7 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { ShoppingCart, LayoutDashboard, User as UserIcon, LogOut, Package, Store, Mail, X } from 'lucide-react';
 
 export default function Layout() {
-  const { user, userRole, setUser, cart } = useStore();
+  const { user, userRole, userData, setUser, cart } = useStore();
   const navigate = useNavigate();
 
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -14,6 +14,7 @@ export default function Layout() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     const unsubscribe = initAuth(async (authUser, token) => {
@@ -23,7 +24,7 @@ export default function Layout() {
       let role: 'admin' | 'member' = 'member';
       let userData: any = null;
       
-      const isAdminEmail = authUser.email === 'giannayufan@gmail.com';
+      const isAdminEmail = authUser.email === 'giannayufan@gmail.com' || authUser.email === 'ko520940@gmail.com';
       
       if (!userSnap.exists()) {
         // Create user
@@ -66,6 +67,8 @@ export default function Layout() {
     try {
       await providerFn();
       setShowLoginModal(false);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
     } catch (error: any) {
       console.error(`${providerName} Login error:`, error);
       if (error.code === 'auth/unauthorized-domain') {
@@ -93,6 +96,8 @@ export default function Layout() {
       setShowLoginModal(false);
       setEmail('');
       setPassword('');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
     } catch (error: any) {
       console.error('Email Auth error:', error);
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
@@ -144,6 +149,14 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="fixed top-4 right-4 z-[60] bg-emerald-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-300">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+          <span className="font-bold">登入成功！</span>
+        </div>
+      )}
+
       {/* Login Modal */}
       {showLoginModal && !user && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -221,7 +234,7 @@ export default function Layout() {
       )}
 
       {/* Profile Setup Modal */}
-      {useStore.getState().userData && !useStore.getState().userData?.isProfileComplete && (
+      {userData && !userData.isProfileComplete && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
             <h2 className="text-2xl font-bold text-slate-800 mb-2">歡迎來到 FreshFlow OS!</h2>
