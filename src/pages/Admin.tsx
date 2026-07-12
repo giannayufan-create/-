@@ -13,6 +13,8 @@ export default function Admin() {
   const [orders, setOrders] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [settings, setSettings] = useState({ spreadsheetId: '' });
+  const [editingProduct, setEditingProduct] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState({ price: 0, stock: 0 });
   const [newProduct, setNewProduct] = useState({ name: '', description: '', price: 0, stock: 0, imageBase64: '', category: '火鍋料' });
 
   const downloadCSV = (data: any[], filename: string) => {
@@ -145,6 +147,15 @@ export default function Admin() {
       updatedAt: new Date().toISOString()
     });
     setNewProduct({ name: '', description: '', price: 0, stock: 0, imageBase64: '', category: '火鍋料' });
+  };
+
+  const saveProductEdit = async (id: string) => {
+    await updateDoc(doc(db, 'products', id), {
+      price: Number(editValues.price),
+      stock: Number(editValues.stock),
+      updatedAt: new Date().toISOString()
+    });
+    setEditingProduct(null);
   };
 
   const deleteProduct = async (id: string) => {
@@ -362,20 +373,119 @@ export default function Admin() {
               <h2 className="text-xl font-bold text-slate-800">目前庫存目錄</h2>
               <button onClick={() => downloadCSV(products, 'products.csv')} className="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 py-1.5 px-4 rounded-lg font-bold transition-colors">下載 Excel (CSV)</button>
             </div>
-            <div className="space-y-3">
-              {products.map(p => (
-                <div key={p.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4 hover:shadow-md transition-shadow group">
-                  <div className="h-16 w-16 bg-slate-100 rounded-xl overflow-hidden flex-shrink-0 border border-slate-100">
-                    {p.imageBase64 && <img src={p.imageBase64} className="h-full w-full object-cover" />}
+            <div className="space-y-6">
+              {['水餃', '火鍋料', '滷味'].map(category => {
+                const categoryProducts = products.filter(p => p.category === category);
+                if (categoryProducts.length === 0) return null;
+                
+                return (
+                  <div key={category} className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <h3 className="text-md font-bold text-emerald-800 mb-3 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      {category}
+                    </h3>
+                    <div className="space-y-3">
+                      {categoryProducts.map(p => (
+                        <div key={p.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4 hover:shadow-md transition-shadow group">
+                          <div className="h-16 w-16 bg-slate-100 rounded-xl overflow-hidden flex-shrink-0 border border-slate-100">
+                            {p.imageBase64 && <img src={p.imageBase64} className="h-full w-full object-cover" />}
+                          </div>
+                          
+                          {editingProduct === p.id ? (
+                            <div className="flex-1 grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-[10px] text-slate-500 mb-1">價格</label>
+                                <input type="number" step="0.01" value={editValues.price} onChange={e => setEditValues({...editValues, price: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-200 rounded p-1 text-sm focus:ring-1 focus:ring-emerald-500 outline-none" />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-slate-500 mb-1">庫存</label>
+                                <input type="number" value={editValues.stock} onChange={e => setEditValues({...editValues, stock: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-200 rounded p-1 text-sm focus:ring-1 focus:ring-emerald-500 outline-none" />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex-1">
+                              <h3 className="font-bold text-slate-800 text-sm">{p.name}</h3>
+                              <p className="text-xs text-slate-500 font-medium mt-1">
+                                庫存: <span className={p.stock <= 5 ? "text-red-500 font-bold" : "text-emerald-600 font-bold"}>{p.stock}</span> 
+                                <span className="mx-2">|</span> ${p.price.toFixed(2)}
+                              </p>
+                            </div>
+                          )}
+                          
+                          <div className="flex flex-col gap-1">
+                            {editingProduct === p.id ? (
+                              <>
+                                <button onClick={() => saveProductEdit(p.id)} className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-1 rounded">儲存</button>
+                                <button onClick={() => setEditingProduct(null)} className="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-1 rounded">取消</button>
+                              </>
+                            ) : (
+                              <>
+                                <button onClick={() => { setEditingProduct(p.id); setEditValues({ price: p.price, stock: p.stock }); }} className="text-[10px] bg-slate-100 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 font-bold px-2 py-1 rounded transition-colors opacity-0 group-hover:opacity-100">編輯</button>
+                                <button onClick={() => deleteProduct(p.id)} className="text-[10px] bg-slate-100 text-slate-400 hover:text-red-600 hover:bg-red-50 font-bold px-2 py-1 rounded transition-colors opacity-0 group-hover:opacity-100">刪除</button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-slate-800">{p.name} {p.category && <span className="ml-2 text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase tracking-wider">{p.category}</span>}</h3>
-                    <p className="text-sm text-slate-500 font-medium">庫存: <span className={p.stock <= 5 ? "text-red-500 font-bold" : "text-emerald-600 font-bold"}>{p.stock}</span> <span className="mx-2">|</span> ${p.price.toFixed(2)}</p>
+                );
+              })}
+              {products.length === 0 && <p className="text-slate-500 font-medium py-4 text-center border-2 border-dashed border-slate-200 rounded-2xl">目前沒有任何商品</p>}
+              
+              {/* Other uncategorized products */}
+              {products.some(p => !['水餃', '火鍋料', '滷味'].includes(p.category)) && (
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <h3 className="text-md font-bold text-slate-600 mb-3 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                    其他
+                  </h3>
+                  <div className="space-y-3">
+                    {products.filter(p => !['水餃', '火鍋料', '滷味'].includes(p.category)).map(p => (
+                        <div key={p.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4 hover:shadow-md transition-shadow group">
+                          <div className="h-16 w-16 bg-slate-100 rounded-xl overflow-hidden flex-shrink-0 border border-slate-100">
+                            {p.imageBase64 && <img src={p.imageBase64} className="h-full w-full object-cover" />}
+                          </div>
+                          
+                          {editingProduct === p.id ? (
+                            <div className="flex-1 grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-[10px] text-slate-500 mb-1">價格</label>
+                                <input type="number" step="0.01" value={editValues.price} onChange={e => setEditValues({...editValues, price: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-200 rounded p-1 text-sm focus:ring-1 focus:ring-emerald-500 outline-none" />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-slate-500 mb-1">庫存</label>
+                                <input type="number" value={editValues.stock} onChange={e => setEditValues({...editValues, stock: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-200 rounded p-1 text-sm focus:ring-1 focus:ring-emerald-500 outline-none" />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex-1">
+                              <h3 className="font-bold text-slate-800 text-sm">{p.name}</h3>
+                              <p className="text-xs text-slate-500 font-medium mt-1">
+                                庫存: <span className={p.stock <= 5 ? "text-red-500 font-bold" : "text-emerald-600 font-bold"}>{p.stock}</span> 
+                                <span className="mx-2">|</span> ${p.price.toFixed(2)}
+                              </p>
+                            </div>
+                          )}
+                          
+                          <div className="flex flex-col gap-1">
+                            {editingProduct === p.id ? (
+                              <>
+                                <button onClick={() => saveProductEdit(p.id)} className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-1 rounded">儲存</button>
+                                <button onClick={() => setEditingProduct(null)} className="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-1 rounded">取消</button>
+                              </>
+                            ) : (
+                              <>
+                                <button onClick={() => { setEditingProduct(p.id); setEditValues({ price: p.price, stock: p.stock }); }} className="text-[10px] bg-slate-100 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 font-bold px-2 py-1 rounded transition-colors opacity-0 group-hover:opacity-100">編輯</button>
+                                <button onClick={() => deleteProduct(p.id)} className="text-[10px] bg-slate-100 text-slate-400 hover:text-red-600 hover:bg-red-50 font-bold px-2 py-1 rounded transition-colors opacity-0 group-hover:opacity-100">刪除</button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                    ))}
                   </div>
-                  <button onClick={() => deleteProduct(p.id)} className="text-slate-400 hover:text-red-500 text-sm p-2 bg-slate-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all">刪除</button>
                 </div>
-              ))}
-              {products.length === 0 && <p className="text-slate-500 font-medium py-4">目前沒有任何商品</p>}
+              )}
             </div>
           </div>
         </div>
