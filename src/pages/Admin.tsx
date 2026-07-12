@@ -15,6 +15,34 @@ export default function Admin() {
   const [settings, setSettings] = useState({ spreadsheetId: '' });
   const [newProduct, setNewProduct] = useState({ name: '', description: '', price: 0, stock: 0, imageBase64: '', category: '' });
 
+  const downloadCSV = (data: any[], filename: string) => {
+    if (data.length === 0) {
+      alert('沒有資料可供下載');
+      return;
+    }
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(fieldName => {
+        let value = row[fieldName];
+        if (typeof value === 'object') {
+          value = JSON.stringify(value);
+        }
+        return `"${String(value).replace(/"/g, '""')}"`;
+      }).join(','))
+    ].join('\n');
+    
+    // Add BOM for Excel UTF-8 compatibility
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   useEffect(() => {
     if (userRole !== 'admin') return;
 
@@ -133,6 +161,18 @@ export default function Admin() {
     alert('Settings saved!');
   };
 
+  const updateOrderStatus = async (id: string, newStatus: string) => {
+    try {
+      await updateDoc(doc(db, 'orders', id), { 
+        status: newStatus, 
+        updatedAt: new Date().toISOString() 
+      });
+    } catch (error) {
+      console.error('Update status error:', error);
+      alert('更新狀態失敗');
+    }
+  };
+
   if (userRole !== 'admin') {
     return <div className="text-center py-12">Access Denied. Admin only.</div>;
   }
@@ -150,6 +190,7 @@ export default function Admin() {
         <div className="flex-1 bg-white rounded-2xl border border-slate-200 p-6 flex flex-col shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-slate-800">客戶與會員資料</h3>
+            <button onClick={() => downloadCSV(users, 'customers.csv')} className="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 py-1.5 px-4 rounded-lg font-bold transition-colors">下載 Excel (CSV)</button>
           </div>
           <div className="flex-1 overflow-x-auto">
             <table className="w-full text-left">
@@ -157,7 +198,7 @@ export default function Admin() {
                 <tr className="text-[10px] text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
                   <th className="py-2">姓名/店名</th>
                   <th className="py-2">聯絡電話</th>
-                  <th className="py-2">收件地址</th>
+                  <th className="py-2">地址資訊</th>
                   <th className="py-2">Email</th>
                   <th className="py-2">會員狀態</th>
                 </tr>
@@ -167,7 +208,10 @@ export default function Admin() {
                   <tr key={u.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
                     <td className="py-4 font-bold text-slate-700">{u.storeName || u.name}</td>
                     <td className="py-4 text-slate-600">{u.phone || '-'}</td>
-                    <td className="py-4 text-slate-600">{u.address || '-'}</td>
+                    <td className="py-4 text-slate-600">
+                      <div><span className="text-[10px] text-slate-400 uppercase">通訊:</span> {u.billingAddress || '-'}</div>
+                      <div><span className="text-[10px] text-slate-400 uppercase">送貨:</span> {u.shippingAddress || '-'}</div>
+                    </td>
                     <td className="py-4 text-slate-500">{u.email}</td>
                     <td className="py-4">
                       {u.isProfileComplete ? (
@@ -193,6 +237,7 @@ export default function Admin() {
         <div className="flex-1 bg-white rounded-2xl border border-slate-200 p-6 flex flex-col shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-slate-800">最新訂單處理</h3>
+            <button onClick={() => downloadCSV(orders, 'orders.csv')} className="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 py-1.5 px-4 rounded-lg font-bold transition-colors">下載 Excel (CSV)</button>
           </div>
           {!accessToken && (
             <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-lg mb-6 text-sm font-medium">
@@ -204,6 +249,7 @@ export default function Admin() {
               <thead>
                 <tr className="text-[10px] text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
                   <th className="py-2">訂單編號</th>
+                  <th className="py-2">客戶資訊</th>
                   <th className="py-2">日期</th>
                   <th className="py-2">項目</th>
                   <th className="py-2">總額</th>
@@ -214,21 +260,36 @@ export default function Admin() {
                 {orders.map(order => (
                   <tr key={order.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
                     <td className="py-4 font-mono font-bold text-slate-700">#{order.id.slice(0, 8)}</td>
+                    <td className="py-4 text-slate-600">
+                      <div className="font-bold text-slate-800">{order.customerName || '-'}</div>
+                      <div className="text-xs">{order.customerPhone || '-'}</div>
+                      {order.shippingAddress && <div className="text-xs text-slate-400 truncate max-w-[200px]" title={order.shippingAddress}>{order.shippingAddress}</div>}
+                    </td>
                     <td className="py-4 text-slate-600">{format(new Date(order.createdAt), 'yyyy.MM.dd')}</td>
                     <td className="py-4 text-slate-600">{order.items.map((i: any) => `${i.name} x ${i.quantity}`).join(', ')}</td>
                     <td className="py-4 font-bold text-slate-800">${order.total.toFixed(2)}</td>
                     <td className="py-4">
-                      {order.status === 'processed' ? (
-                         <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold">已完成</span>
-                      ) : (
-                         <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold">處理中</span>
-                      )}
+                      <select 
+                        value={order.status} 
+                        onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                        className={`text-xs font-bold px-2 py-1 rounded outline-none cursor-pointer ${
+                          order.status === 'processed' ? 'bg-emerald-100 text-emerald-700' : 
+                          order.status === 'processing' ? 'bg-amber-100 text-amber-700' :
+                          order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                          'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        <option value="pending">待處理 (Pending)</option>
+                        <option value="processing">處理中 (Processing)</option>
+                        <option value="processed">已完成 (Processed)</option>
+                        <option value="cancelled">已取消 (Cancelled)</option>
+                      </select>
                     </td>
                   </tr>
                 ))}
                 {orders.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-slate-500 font-medium">目前沒有訂單</td>
+                    <td colSpan={6} className="py-8 text-center text-slate-500 font-medium">目前沒有訂單</td>
                   </tr>
                 )}
               </tbody>
@@ -240,11 +301,19 @@ export default function Admin() {
       {activeTab === 'products' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <h2 className="text-xl font-bold mb-4 text-slate-800">新增食品項</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-slate-800">新增食品項</h2>
+            </div>
             <form onSubmit={addProduct} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700">名稱</label>
-                <input required type="text" className="mt-1 block w-full bg-slate-50 rounded-xl border-slate-200 shadow-sm border p-3 focus:ring-2 focus:ring-emerald-500 focus:outline-none" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-slate-700">名稱</label>
+                  <input required type="text" className="mt-1 block w-full bg-slate-50 rounded-xl border-slate-200 shadow-sm border p-3 focus:ring-2 focus:ring-emerald-500 focus:outline-none" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-slate-700">商品分類</label>
+                  <input type="text" placeholder="例如: 蔬菜、水果、肉品" className="mt-1 block w-full bg-slate-50 rounded-xl border-slate-200 shadow-sm border p-3 focus:ring-2 focus:ring-emerald-500 focus:outline-none" value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700">描述</label>
@@ -285,7 +354,10 @@ export default function Admin() {
             </form>
           </div>
           <div>
-            <h2 className="text-xl font-bold mb-4 text-slate-800">目前庫存目錄</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-slate-800">目前庫存目錄</h2>
+              <button onClick={() => downloadCSV(products, 'products.csv')} className="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 py-1.5 px-4 rounded-lg font-bold transition-colors">下載 Excel (CSV)</button>
+            </div>
             <div className="space-y-3">
               {products.map(p => (
                 <div key={p.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4 hover:shadow-md transition-shadow group">
@@ -293,7 +365,7 @@ export default function Admin() {
                     {p.imageBase64 && <img src={p.imageBase64} className="h-full w-full object-cover" />}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-slate-800">{p.name}</h3>
+                    <h3 className="font-bold text-slate-800">{p.name} {p.category && <span className="ml-2 text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase tracking-wider">{p.category}</span>}</h3>
                     <p className="text-sm text-slate-500 font-medium">庫存: <span className={p.stock <= 5 ? "text-red-500 font-bold" : "text-emerald-600 font-bold"}>{p.stock}</span> <span className="mx-2">|</span> ${p.price.toFixed(2)}</p>
                   </div>
                   <button onClick={() => deleteProduct(p.id)} className="text-slate-400 hover:text-red-500 text-sm p-2 bg-slate-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all">刪除</button>

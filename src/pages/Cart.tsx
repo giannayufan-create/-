@@ -18,8 +18,14 @@ export default function Cart() {
     
     setIsCheckingOut(true);
     try {
+      const { userData } = useStore.getState();
       await addDoc(collection(db, 'orders'), {
         userId: user.uid,
+        customerName: userData?.name || user.displayName || 'Unknown',
+        customerPhone: userData?.phone || '',
+        billingAddress: userData?.billingAddress || '',
+        shippingAddress: userData?.shippingAddress || '',
+        customerEmail: user.email,
         items: cart,
         total: cartTotal,
         status: 'pending',

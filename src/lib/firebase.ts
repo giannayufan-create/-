@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User } from 'firebase/auth';
+import { getAuth, signInWithPopup, GoogleAuthProvider, FacebookAuthProvider, OAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, User } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
@@ -10,11 +10,14 @@ export const db = (firebaseConfig as any).firestoreDatabaseId
   : getFirestore(app);
 export const auth = getAuth(app);
 
-const provider = new GoogleAuthProvider();
+const googleProvider = new GoogleAuthProvider();
+const facebookProvider = new FacebookAuthProvider();
+const yahooProvider = new OAuthProvider('yahoo.com');
+
 // Request Workspace scopes explicitly requested by user (and standard profile)
-provider.addScope('https://www.googleapis.com/auth/spreadsheets');
-provider.addScope('https://www.googleapis.com/auth/gmail.send');
-provider.addScope('email');
+googleProvider.addScope('https://www.googleapis.com/auth/spreadsheets');
+googleProvider.addScope('https://www.googleapis.com/auth/gmail.send');
+googleProvider.addScope('email');
 
 let isSigningIn = false;
 let cachedAccessToken: string | null = null;
@@ -38,7 +41,7 @@ export const initAuth = (
 export const googleSignIn = async (): Promise<{ user: User; accessToken: string } | null> => {
   try {
     isSigningIn = true;
-    const result = await signInWithPopup(auth, provider);
+    const result = await signInWithPopup(auth, googleProvider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
     
     if (credential?.accessToken) {
@@ -48,6 +51,56 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
     return { user: result.user, accessToken: cachedAccessToken || '' };
   } catch (error: any) {
     console.error('Sign in error:', error);
+    throw error;
+  } finally {
+    isSigningIn = false;
+  }
+};
+
+export const facebookSignIn = async () => {
+  try {
+    isSigningIn = true;
+    const result = await signInWithPopup(auth, facebookProvider);
+    return result;
+  } catch (error: any) {
+    console.error('Facebook Sign in error:', error);
+    throw error;
+  } finally {
+    isSigningIn = false;
+  }
+};
+
+export const yahooSignIn = async () => {
+  try {
+    isSigningIn = true;
+    const result = await signInWithPopup(auth, yahooProvider);
+    return result;
+  } catch (error: any) {
+    console.error('Yahoo Sign in error:', error);
+    throw error;
+  } finally {
+    isSigningIn = false;
+  }
+};
+
+export const registerWithEmail = async (email: string, pass: string) => {
+  try {
+    isSigningIn = true;
+    return await createUserWithEmailAndPassword(auth, email, pass);
+  } catch (error: any) {
+    console.error('Registration error:', error);
+    throw error;
+  } finally {
+    isSigningIn = false;
+  }
+};
+
+export const loginWithEmail = async (email: string, pass: string) => {
+  try {
+    isSigningIn = true;
+    return await signInWithEmailAndPassword(auth, email, pass);
+  } catch (error: any) {
+    console.error('Login error:', error);
     throw error;
   } finally {
     isSigningIn = false;
