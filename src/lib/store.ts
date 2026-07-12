@@ -15,9 +15,11 @@ interface AppState {
   accessToken: string | null;
   cart: CartItem[];
   cartTotal: number;
+  isAuthLoading: boolean;
   isAuthModalOpen: boolean;
   isProfileModalOpen: boolean;
   setUser: (user: User | null, role: 'admin' | 'member' | null, token: string | null, userData?: any) => void;
+  setAuthLoading: (isLoading: boolean) => void;
   addToCart: (item: CartItem) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
@@ -33,9 +35,11 @@ export const useStore = create<AppState>((set, get) => ({
   accessToken: null,
   cart: [],
   cartTotal: 0,
+  isAuthLoading: true,
   isAuthModalOpen: false,
   isProfileModalOpen: false,
-  setUser: (user, role, token, userData) => set({ user, userRole: role, accessToken: token, userData }),
+  setUser: (user, role, token, userData) => set({ user, userRole: role, accessToken: token, userData, isAuthLoading: false }),
+  setAuthLoading: (isLoading) => set({ isAuthLoading: isLoading }),
   addToCart: (item) => set((state) => {
     const existing = state.cart.find(i => i.productId === item.productId);
     let newCart = [];

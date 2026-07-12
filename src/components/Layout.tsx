@@ -6,7 +6,7 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { ShoppingCart, LayoutDashboard, User as UserIcon, LogOut, Package, Store, Mail, X, Eye, EyeOff } from 'lucide-react';
 
 export default function Layout() {
-  const { user, userRole, userData, setUser, cart, isAuthModalOpen, setAuthModalOpen, isProfileModalOpen, setProfileModalOpen } = useStore();
+  const { user, userRole, userData, setUser, cart, isAuthLoading, setAuthLoading, isAuthModalOpen, setAuthModalOpen, isProfileModalOpen, setProfileModalOpen } = useStore();
   const navigate = useNavigate();
 
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -23,11 +23,7 @@ export default function Layout() {
       try {
         // Fetch user role
         const userRef = doc(db, 'users', authUser.uid);
-        // Use timeout to prevent hanging on init
-        const userSnap = await Promise.race([
-          getDoc(userRef),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('getDoc timeout')), 5000))
-        ]);
+        const userSnap = await getDoc(userRef);
         let role: 'admin' | 'member' = 'member';
         let userData: any = null;
         
@@ -403,7 +399,9 @@ export default function Layout() {
         </div>
 
         <div className="flex items-center gap-6">
-          {user ? (
+          {isAuthLoading ? (
+            <div className="w-24 h-10 bg-slate-100 rounded-xl animate-pulse hidden md:block"></div>
+          ) : user ? (
             <>
               <div className="text-right hidden sm:block">
                 <p className="text-xs text-slate-500 font-medium uppercase tracking-wider flex items-center justify-end gap-1">
@@ -412,7 +410,7 @@ export default function Layout() {
                 </p>
                 <p className="text-sm font-bold text-emerald-700">{userRole === 'admin' ? '管理員' : '會員'}</p>
               </div>
-              <div className="flex items-center gap-3 border-l border-slate-200 pl-6 relative" ref={menuRef}>
+              <div className="hidden md:flex items-center gap-3 border-l border-slate-200 pl-6 relative" ref={menuRef}>
                 <div className="w-10 h-10 bg-slate-200 rounded-full border-2 border-white shadow-sm overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-emerald-500 transition-all flex items-center justify-center text-slate-600" onClick={() => setShowProfileMenu(!showProfileMenu)}>
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" />
@@ -446,13 +444,13 @@ export default function Layout() {
           ) : (
             <button
               onClick={() => setAuthModalOpen(true)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-6 rounded-xl text-sm shadow-lg shadow-emerald-600/20 transition-all"
+              className="hidden md:block bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-6 rounded-xl text-sm shadow-lg shadow-emerald-600/20 transition-all"
             >
               登入 / 註冊
             </button>
           )}
 
-          <div className="border-l border-slate-200 pl-6">
+          <div className="hidden md:block border-l border-slate-200 pl-6">
              <Link to="/cart" className="text-slate-400 hover:text-emerald-600 relative transition-colors block">
                 <ShoppingCart className="w-6 h-6" />
                 {totalItems > 0 && (
@@ -465,9 +463,43 @@ export default function Layout() {
         </div>
       </nav>
 
-      <main className="flex-1 p-8 w-full max-w-7xl mx-auto flex flex-col">
+      <main className="flex-1 p-4 sm:p-8 w-full max-w-7xl mx-auto flex flex-col pb-20 sm:pb-8">
         <Outlet />
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex items-center justify-around h-16 px-2 z-40 pb-safe">
+        <Link to="/" className="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600">
+          <Store className="w-5 h-5 mb-1" />
+          <span className="text-[10px] font-bold">菜單</span>
+        </Link>
+        <Link to="/cart" className="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600 relative">
+          <ShoppingCart className="w-5 h-5 mb-1" />
+          <span className="text-[10px] font-bold">購物車</span>
+          {totalItems > 0 && (
+            <span className="absolute top-1 right-5 bg-emerald-600 text-white rounded-full h-4 w-4 flex items-center justify-center text-[9px] font-bold shadow-sm">
+              {totalItems}
+            </span>
+          )}
+        </Link>
+        {user ? (
+          userRole === 'admin' ? (
+            <Link to="/admin" className="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600">
+              <LayoutDashboard className="w-5 h-5 mb-1" />
+              <span className="text-[10px] font-bold">管理</span>
+            </Link>
+          ) : (
+            <Link to="/orders" className="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600">
+              <Package className="w-5 h-5 mb-1" />
+              <span className="text-[10px] font-bold">訂單</span>
+            </Link>
+          )
+        ) : null}
+        <button onClick={() => user ? setProfileModalOpen(true) : setAuthModalOpen(true)} className="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600">
+          <UserIcon className="w-5 h-5 mb-1" />
+          <span className="text-[10px] font-bold">{user ? '會員' : '登入'}</span>
+        </button>
+      </div>
 
       {/* Footer Status Bar */}
       <footer className="h-8 bg-slate-800 text-slate-400 px-8 flex items-center justify-between text-[10px] tracking-wide shrink-0">
