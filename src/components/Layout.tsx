@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
-import { initAuth, googleSignIn, facebookSignIn, yahooSignIn, loginWithEmail, registerWithEmail, logout, db } from '../lib/firebase';
+import { initAuth, googleSignIn, facebookSignIn, yahooSignIn, loginWithEmail, registerWithEmail, logout, db, resetPassword } from '../lib/firebase';
 import { useStore } from '../lib/store';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { ShoppingCart, LayoutDashboard, User as UserIcon, LogOut, Package, Store, Mail, X } from 'lucide-react';
+import { ShoppingCart, LayoutDashboard, User as UserIcon, LogOut, Package, Store, Mail, X, Eye, EyeOff } from 'lucide-react';
 
 export default function Layout() {
   const { user, userRole, userData, setUser, cart } = useStore();
@@ -13,6 +13,9 @@ export default function Layout() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [authError, setAuthError] = useState('');
   const [showToast, setShowToast] = useState(false);
 
@@ -86,6 +89,17 @@ export default function Layout() {
       setAuthError('請填寫信箱和密碼');
       return;
     }
+
+    if (authMode === 'register') {
+      if (password !== confirmPassword) {
+        setAuthError('兩次輸入的密碼不一致');
+        return;
+      }
+      if (password.length < 6 || !/(?=.*[a-z])(?=.*[A-Z])/.test(password)) {
+        setAuthError('密碼必須至少6個字元，且包含大小寫英文字母');
+        return;
+      }
+    }
     
     try {
       if (authMode === 'login') {
@@ -96,6 +110,7 @@ export default function Layout() {
       setShowLoginModal(false);
       setEmail('');
       setPassword('');
+      setConfirmPassword('');
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } catch (error: any) {
@@ -106,9 +121,25 @@ export default function Layout() {
         setAuthError('這個信箱已經註冊過了');
       } else if (error.code === 'auth/weak-password') {
         setAuthError('密碼強度太弱 (請至少輸入6個字元)');
+      } else if (error.code === 'auth/too-many-requests') {
+        setAuthError('嘗試次數過多被鎖定，請稍後再試，或重設密碼。');
       } else {
         setAuthError(`登入失敗: ${error.message}`);
       }
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!email) {
+      setAuthError('請填寫您的電子郵件以重設密碼');
+      return;
+    }
+    try {
+      await resetPassword(email);
+      setAuthError('密碼重設信件已發送，請檢查您的信箱！');
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      setAuthError(`重設密碼失敗: ${error.message}`);
     }
   };
 
@@ -216,9 +247,33 @@ export default function Layout() {
                   <input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all" placeholder="name@example.com" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">密碼</label>
-                  <input required type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all" placeholder="••••••••" />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-slate-700">密碼</label>
+                    {authMode === 'login' && (
+                      <button type="button" onClick={handleResetPassword} className="text-xs text-emerald-600 hover:text-emerald-700 font-medium">
+                        忘記密碼？
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <input required type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 pr-10 focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all" placeholder="••••••••" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {authMode === 'register' && <p className="text-xs text-slate-500 mt-1">密碼必須至少6個字元，且包含大小寫英文字母</p>}
                 </div>
+                {authMode === 'register' && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">再次確認密碼</label>
+                    <div className="relative">
+                      <input required type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 pr-10 focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all" placeholder="••••••••" />
+                      <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl shadow-lg shadow-emerald-600/20 transition-all">
                   {authMode === 'login' ? '登入' : '註冊帳號'}
                 </button>
