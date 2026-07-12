@@ -67,7 +67,10 @@ export default function Layout() {
       } catch (err) {
         console.error("Error setting up user session:", err);
         // Do not force isProfileComplete: false if there is an error, avoid trapping user
-        setUser(authUser, 'member', token, { name: authUser.displayName || 'Anonymous', role: 'member', isProfileComplete: true });
+        const userEmailFallback = (authUser.email || '').toLowerCase();
+        const isAdminFallback = userEmailFallback === 'giannayufan@gmail.com' || userEmailFallback === 'ko520940@gmail.com';
+        const fallbackRole = isAdminFallback ? 'admin' : 'member';
+        setUser(authUser, fallbackRole, token, { name: authUser.displayName || 'Anonymous', role: fallbackRole, isProfileComplete: true });
         setAuthModalOpen(false);
       }
     }, () => {
