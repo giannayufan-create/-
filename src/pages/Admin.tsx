@@ -13,7 +13,7 @@ export default function Admin() {
   const [orders, setOrders] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [settings, setSettings] = useState({ spreadsheetId: '' });
-  const [newProduct, setNewProduct] = useState({ name: '', description: '', price: 0, stock: 0, imageBase64: '', category: '' });
+  const [newProduct, setNewProduct] = useState({ name: '', description: '', price: 0, stock: 0, imageBase64: '', category: '火鍋料' });
 
   const downloadCSV = (data: any[], filename: string) => {
     if (data.length === 0) {
@@ -144,7 +144,7 @@ export default function Admin() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
-    setNewProduct({ name: '', description: '', price: 0, stock: 0, imageBase64: '', category: '' });
+    setNewProduct({ name: '', description: '', price: 0, stock: 0, imageBase64: '', category: '火鍋料' });
   };
 
   const deleteProduct = async (id: string) => {
@@ -312,7 +312,11 @@ export default function Admin() {
                 </div>
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-slate-700">商品分類</label>
-                  <input type="text" placeholder="例如: 蔬菜、水果、肉品" className="mt-1 block w-full bg-slate-50 rounded-xl border-slate-200 shadow-sm border p-3 focus:ring-2 focus:ring-emerald-500 focus:outline-none" value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} />
+                  <select className="mt-1 block w-full bg-slate-50 rounded-xl border-slate-200 shadow-sm border p-3 focus:ring-2 focus:ring-emerald-500 focus:outline-none" value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})}>
+                    <option value="火鍋料">火鍋料</option>
+                    <option value="水餃">水餃</option>
+                    <option value="滷味">滷味</option>
+                  </select>
                 </div>
               </div>
               <div>

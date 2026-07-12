@@ -1,5 +1,5 @@
 {
-  "name": "Foodie Flow",
+  "name": "滷味小哥路人甲",
   "description": "Online food ordering system with real-time inventory, Google Sheets sync, and automated PDF receipts via Gmail.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

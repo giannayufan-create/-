@@ -20,82 +20,18 @@ service cloud.firestore {
 
     // users/{userId}
     match /users/{userId} {
-      function isValidUser(data) {
-        return data.keys().hasAll(['role', 'name', 'email', 'points', 'createdAt', 'isProfileComplete']) &&
-               (data.role == 'member' || (data.role == 'admin' && isAdminEmail())) &&
-               data.name is string && data.name.size() <= 100 &&
-               data.email is string && data.email.size() <= 150 &&
-               data.points is number && data.points >= 0 &&
-               data.isProfileComplete is bool &&
-               data.createdAt is string;
-      }
-      function isValidUserUpdate(data) {
-        return data.name is string && data.name.size() <= 100 &&
-               data.points is number && data.points >= 0 &&
-               data.updatedAt is string;
-      }
-
-      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      // Admin can list users, member can't
-      allow list: if isAdmin();
-      
-      allow create: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidUser(incoming()) && incoming().points == 0;
-      
-      allow update: if isSignedIn() && request.auth.uid == userId && isValidUserUpdate(incoming()) && (
-        (incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'billingAddress', 'shippingAddress', 'isProfileComplete', 'updatedAt'])) ||
-        (isAdmin())
-      );
+      allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
     // products/{productId}
     match /products/{productId} {
-      function isValidProduct(data) {
-        return data.keys().hasAll(['name', 'price', 'stock', 'createdAt']) &&
-               data.name is string && data.name.size() <= 100 &&
-               data.price is number && data.price >= 0 &&
-               data.stock is number && data.stock >= 0 &&
-               data.createdAt is string;
-      }
-      function isValidProductUpdate(data) {
-        return data.name is string && data.name.size() <= 100 &&
-               data.price is number && data.price >= 0 &&
-               data.stock is number && data.stock >= 0 &&
-               data.updatedAt is string;
-      }
-      allow read: if true; // Publicly visible to browse
-      
-      allow create: if isAdmin() && isValidId(productId) && isValidProduct(incoming());
-      
-      allow update: if isAdmin() && isValidProductUpdate(incoming()) && (
-        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'price', 'stock', 'imageBase64', 'category', 'updatedAt'])
-      );
-      
-      allow delete: if isAdmin();
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // orders/{orderId}
     match /orders/{orderId} {
-      function isValidOrder(data) {
-        return data.keys().hasAll(['userId', 'items', 'total', 'status', 'createdAt']) &&
-               data.userId == request.auth.uid &&
-               data.items is list && data.items.size() > 0 && data.items.size() <= 50 &&
-               data.total is number && data.total >= 0 &&
-               data.status == 'pending' &&
-               data.createdAt is string;
-      }
-      function isValidOrderUpdate(data) {
-        return data.status in ['pending', 'processed', 'cancelled'] &&
-               data.updatedAt is string;
-      }
-
-      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      
-      allow create: if isSignedIn() && isValidId(orderId) && isValidOrder(incoming());
-      
-      allow update: if isAdmin() && isValidOrderUpdate(incoming()) && (
-        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
-      );
+      allow read, write: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin() || !exists(/databases/$(database)/documents/orders/$(orderId)));
     }
 
     // settings/{settingId}

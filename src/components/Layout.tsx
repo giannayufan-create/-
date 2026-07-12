@@ -230,7 +230,7 @@ export default function Layout() {
                 <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mx-auto mb-3">
                   <div className="w-6 h-6 border-2 border-emerald-600 rounded-sm italic font-bold text-sm flex items-center justify-center text-emerald-600">F</div>
                 </div>
-                <h2 className="text-2xl font-bold text-slate-800 tracking-tight">歡迎來到 FreshFlow</h2>
+                <h2 className="text-2xl font-bold text-slate-800 tracking-tight">歡迎來到 滷味小哥路人甲</h2>
               </div>
 
               <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
@@ -337,7 +337,7 @@ export default function Layout() {
                 <X className="w-5 h-5" />
               </button>
             )}
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">{isProfileModalOpen ? '修改基本資料' : '歡迎來到 FreshFlow OS!'}</h2>
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">{isProfileModalOpen ? '修改基本資料' : '歡迎來到 滷味小哥路人甲!'}</h2>
             <p className="text-slate-500 mb-6 text-sm">{isProfileModalOpen ? '請更新您的個人或店家資料。' : '請完成您的個人或店家資料以開始使用。'}</p>
             <form onSubmit={handleProfileSetup} className="space-y-4">
               <div>
@@ -370,7 +370,7 @@ export default function Layout() {
             <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
               <div className="w-4 h-4 border-2 border-white rounded-sm italic font-bold text-[10px] flex items-center justify-center text-white">F</div>
             </div>
-            <span className="text-xl font-bold text-slate-800 tracking-tight">FreshFlow <span className="text-emerald-600 font-medium text-sm ml-1">OS</span></span>
+            <span className="text-xl font-bold text-slate-800 tracking-tight">滷味小哥路人甲 <span className="text-emerald-600 font-medium text-sm ml-1">線上訂購</span></span>
           </Link>
         </div>
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { db } from '../lib/firebase';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { useStore } from '../lib/store';
@@ -7,6 +7,7 @@ import { Plus } from 'lucide-react';
 export default function Storefront() {
   const [products, setProducts] = useState<any[]>([]);
   const [toastMessage, setToastMessage] = useState('');
+  const [activeCategory, setActiveCategory] = useState<string>('全部');
   const { addToCart } = useStore();
 
   useEffect(() => {
@@ -25,6 +26,13 @@ export default function Storefront() {
     setTimeout(() => setToastMessage(''), 2500);
   };
 
+  const categories = ['全部', '火鍋料', '水餃', '滷味'];
+  
+  const filteredProducts = useMemo(() => {
+    if (activeCategory === '全部') return products;
+    return products.filter(p => p.category === activeCategory);
+  }, [products, activeCategory]);
+
   return (
     <div className="flex-1 flex flex-col relative">
       {toastMessage && (
@@ -32,15 +40,28 @@ export default function Storefront() {
           {toastMessage}
         </div>
       )}
-      <header className="flex items-end justify-between mb-8">
+      <header className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">商品目錄</h1>
           <p className="text-slate-500 mt-1">選購您的商品。</p>
         </div>
+        
+        {/* Category Filter */}
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-colors ${activeCategory === cat ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20' : 'bg-white text-slate-600 border border-slate-200 hover:border-emerald-300 hover:text-emerald-600'}`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.map(product => (
+        {filteredProducts.map(product => (
           <div key={product.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm group flex flex-col">
             <div className="h-40 bg-slate-100 flex items-center justify-center relative">
               {product.stock <= 5 ? (
