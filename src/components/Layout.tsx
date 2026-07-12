@@ -35,7 +35,7 @@ export default function Layout() {
           const newUserData = {
             role: isAdminEmail ? 'admin' : 'member',
             name: authUser.displayName || 'Anonymous',
-            email: authUser.email,
+            email: authUser.email || '',
             points: 0,
             isProfileComplete: false,
             createdAt: new Date().toISOString(),
@@ -46,25 +46,35 @@ export default function Layout() {
           role = newUserData.role as 'admin' | 'member';
         } else {
           userData = userSnap.data();
-          role = userData.role;
+          role = userData.role || 'member';
           
           // Auto-upgrade if it's the admin email but not admin yet
           if (isAdminEmail && role !== 'admin') {
              role = 'admin';
-             await updateDoc(userRef, { role: 'admin' });
+             try {
+               await updateDoc(userRef, { role: 'admin', updatedAt: new Date().toISOString() });
+             } catch (e) {
+               console.warn("Could not auto-upgrade admin role", e);
+             }
              userData.role = 'admin';
           }
         }
         
+        // Ensure isProfileComplete is set properly
+        if (userData && typeof userData.isProfileComplete !== 'boolean') {
+           userData.isProfileComplete = false;
+        }
+
         setUser(authUser, role, token, userData);
         setAuthModalOpen(false);
       } catch (err) {
         console.error("Error setting up user session:", err);
-        setUser(authUser, 'member', token, { name: authUser.displayName || 'Anonymous', role: 'member' });
+        setUser(authUser, 'member', token, { name: authUser.displayName || 'Anonymous', role: 'member', isProfileComplete: false });
+        setAuthModalOpen(false);
       }
     }, () => {
+      console.log("Firebase onAuthStateChanged fired with null user");
       setUser(null, null, null, null);
-      navigate('/');
     });
 
     return () => unsubscribe();
