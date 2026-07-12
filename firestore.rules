@@ -11,15 +11,18 @@ service cloud.firestore {
     function existing() { return resource.data; }
     function incoming() { return request.resource.data; }
     function isValidId(id) { return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function isAdminEmail() {
+      return request.auth != null && request.auth.token.email in ['giannayufan@gmail.com', 'ko520940@gmail.com'];
+    }
     function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isAdminEmail() || (isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
 
     // users/{userId}
     match /users/{userId} {
       function isValidUser(data) {
         return data.keys().hasAll(['role', 'name', 'email', 'points', 'createdAt', 'isProfileComplete']) &&
-               data.role in ['admin', 'member'] &&
+               (data.role == 'member' || (data.role == 'admin' && isAdminEmail())) &&
                data.name is string && data.name.size() <= 100 &&
                data.email is string && data.email.size() <= 150 &&
                data.points is number && data.points >= 0 &&
@@ -36,10 +39,10 @@ service cloud.firestore {
       // Admin can list users, member can't
       allow list: if isAdmin();
       
-      allow create: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidUser(incoming()) && incoming().role == 'member' && incoming().points == 0;
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidUser(incoming()) && incoming().points == 0;
       
       allow update: if isSignedIn() && request.auth.uid == userId && isValidUserUpdate(incoming()) && (
-        (incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'address', 'storeName', 'isProfileComplete', 'updatedAt'])) ||
+        (incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'billingAddress', 'shippingAddress', 'isProfileComplete', 'updatedAt'])) ||
         (isAdmin())
       );
     }

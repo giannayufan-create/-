@@ -154,6 +154,7 @@ export default function Layout() {
   const [setupData, setSetupData] = useState({ name: '', phone: '', billingAddress: '', shippingAddress: '' });
   const [isSubmittingSetup, setIsSubmittingSetup] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   useEffect(() => {
     if (userData) {
@@ -370,8 +371,8 @@ export default function Layout() {
                 </p>
                 <p className="text-sm font-bold text-emerald-700">{userRole === 'admin' ? '管理員' : '會員'}</p>
               </div>
-              <div className="flex items-center gap-3 border-l border-slate-200 pl-6">
-                <div className="w-10 h-10 bg-slate-200 rounded-full border-2 border-white shadow-sm overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-red-500 transition-all flex items-center justify-center text-slate-600" onClick={handleLogout} title="登出">
+              <div className="flex items-center gap-3 border-l border-slate-200 pl-6 relative">
+                <div className="w-10 h-10 bg-slate-200 rounded-full border-2 border-white shadow-sm overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-emerald-500 transition-all flex items-center justify-center text-slate-600" onClick={() => setShowProfileMenu(!showProfileMenu)}>
                   {user.displayName ? (
                     <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.displayName}`} alt="Avatar" />
                   ) : (
@@ -380,16 +381,25 @@ export default function Layout() {
                 </div>
                 <div className="leading-none hidden sm:block">
                   <p className="text-sm font-bold text-slate-800">{user.displayName || user.email || '會員'}</p>
-                  <div className="flex items-center gap-3 mt-1.5">
-                    {userRole === 'admin' ? (
-                      <Link to="/admin" className="text-[10px] text-slate-500 hover:text-emerald-600 font-bold uppercase tracking-wide">管理後台</Link>
-                    ) : (
-                      <Link to="/orders" className="text-[10px] text-slate-500 hover:text-emerald-600 font-bold uppercase tracking-wide">訂單歷史</Link>
-                    )}
-                    <span className="text-slate-300">|</span>
-                    <button onClick={() => setShowEditProfile(true)} className="text-[10px] text-slate-500 hover:text-emerald-600 font-bold uppercase tracking-wide">修改資料</button>
-                  </div>
+                  <p className="text-[10px] text-slate-500 mt-1 uppercase font-medium">{userRole === 'admin' ? '管理員' : '一般會員'}</p>
                 </div>
+                
+                {showProfileMenu && (
+                  <div className="absolute top-12 right-0 sm:right-auto sm:left-6 w-48 bg-white border border-slate-200 rounded-xl shadow-lg py-2 z-50">
+                    <div className="px-4 py-2 border-b border-slate-100 mb-2 sm:hidden">
+                      <p className="text-sm font-bold text-slate-800 truncate">{user.displayName || user.email || '會員'}</p>
+                      <p className="text-[10px] text-slate-500 uppercase font-medium">{userRole === 'admin' ? '管理員' : '一般會員'}</p>
+                    </div>
+                    {userRole === 'admin' ? (
+                      <Link to="/admin" onClick={() => setShowProfileMenu(false)} className="block px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">管理後台</Link>
+                    ) : (
+                      <Link to="/orders" onClick={() => setShowProfileMenu(false)} className="block px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">訂單歷史</Link>
+                    )}
+                    <button onClick={() => { setShowEditProfile(true); setShowProfileMenu(false); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">修改基本資料</button>
+                    <div className="border-t border-slate-100 my-1"></div>
+                    <button onClick={() => { handleLogout(); setShowProfileMenu(false); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium">登出</button>
+                  </div>
+                )}
               </div>
             </>
           ) : (
