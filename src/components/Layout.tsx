@@ -185,7 +185,23 @@ export default function Layout() {
                   <div className="w-6 h-6 border-2 border-emerald-600 rounded-sm italic font-bold text-sm flex items-center justify-center text-emerald-600">F</div>
                 </div>
                 <h2 className="text-2xl font-bold text-slate-800 tracking-tight">歡迎來到 FreshFlow</h2>
-                <p className="text-slate-500 mt-1 text-sm">{authMode === 'login' ? '登入以繼續' : '建立一個新帳號'}</p>
+              </div>
+
+              <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('login'); setAuthError(''); }}
+                  className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${authMode === 'login' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  登入
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('register'); setAuthError(''); }}
+                  className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${authMode === 'register' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  註冊新帳號
+                </button>
               </div>
 
               {authError && (
@@ -235,12 +251,6 @@ export default function Layout() {
                     <path d="M47.45 61.27l-24.9-39.73h15.93l16.14 27.56L68.79 21.54h14.73l-26.69 39.46v21.5h-9.38v-21.23z" />
                   </svg>
                   使用 Yahoo 登入
-                </button>
-              </div>
-              
-              <div className="mt-6 text-center">
-                <button type="button" onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAuthError(''); }} className="text-sm text-emerald-600 hover:text-emerald-700 font-medium hover:underline">
-                  {authMode === 'login' ? '沒有帳號？立即註冊' : '已有帳號？登入'}
                 </button>
               </div>
             </div>
