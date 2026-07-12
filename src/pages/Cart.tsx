@@ -6,14 +6,20 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Cart() {
-  const { cart, cartTotal, updateQuantity, removeFromCart, clearCart, user } = useStore();
+  const { cart, cartTotal, updateQuantity, removeFromCart, clearCart, user, setAuthModalOpen, setProfileModalOpen } = useStore();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const navigate = useNavigate();
 
   const handleCheckout = async () => {
     if (!user) {
-      alert('Please sign in to checkout');
+      setAuthModalOpen(true);
       return;
+    }
+    
+    const { userData } = useStore.getState();
+    if (!userData || !userData.isProfileComplete) {
+       setProfileModalOpen(true);
+       return;
     }
     
     setIsCheckingOut(true);

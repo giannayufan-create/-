@@ -6,10 +6,9 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { ShoppingCart, LayoutDashboard, User as UserIcon, LogOut, Package, Store, Mail, X, Eye, EyeOff } from 'lucide-react';
 
 export default function Layout() {
-  const { user, userRole, userData, setUser, cart } = useStore();
+  const { user, userRole, userData, setUser, cart, isAuthModalOpen, setAuthModalOpen, isProfileModalOpen, setProfileModalOpen } = useStore();
   const navigate = useNavigate();
 
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,56 +20,61 @@ export default function Layout() {
 
   useEffect(() => {
     const unsubscribe = initAuth(async (authUser, token) => {
-      // Fetch user role
-      const userRef = doc(db, 'users', authUser.uid);
-      const userSnap = await getDoc(userRef);
-      let role: 'admin' | 'member' = 'member';
-      let userData: any = null;
-      
-      const userEmail = (authUser.email || '').toLowerCase();
-      const isAdminEmail = userEmail === 'giannayufan@gmail.com' || userEmail === 'ko520940@gmail.com';
-      
-      if (!userSnap.exists()) {
-        // Create user
-        const newUserData = {
-          role: isAdminEmail ? 'admin' : 'member',
-          name: authUser.displayName || 'Anonymous',
-          email: authUser.email,
-          points: 0,
-          isProfileComplete: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        await setDoc(userRef, newUserData);
-        userData = newUserData;
-        role = newUserData.role as 'admin' | 'member';
-      } else {
-        userData = userSnap.data();
-        role = userData.role;
+      try {
+        // Fetch user role
+        const userRef = doc(db, 'users', authUser.uid);
+        const userSnap = await getDoc(userRef);
+        let role: 'admin' | 'member' = 'member';
+        let userData: any = null;
         
-        // Auto-upgrade if it's the admin email but not admin yet
-        if (isAdminEmail && role !== 'admin') {
-           role = 'admin';
-           await updateDoc(userRef, { role: 'admin' });
-           userData.role = 'admin';
+        const userEmail = (authUser.email || '').toLowerCase();
+        const isAdminEmail = userEmail === 'giannayufan@gmail.com' || userEmail === 'ko520940@gmail.com';
+        
+        if (!userSnap.exists()) {
+          // Create user
+          const newUserData = {
+            role: isAdminEmail ? 'admin' : 'member',
+            name: authUser.displayName || 'Anonymous',
+            email: authUser.email,
+            points: 0,
+            isProfileComplete: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          await setDoc(userRef, newUserData);
+          userData = newUserData;
+          role = newUserData.role as 'admin' | 'member';
+        } else {
+          userData = userSnap.data();
+          role = userData.role;
+          
+          // Auto-upgrade if it's the admin email but not admin yet
+          if (isAdminEmail && role !== 'admin') {
+             role = 'admin';
+             await updateDoc(userRef, { role: 'admin' });
+             userData.role = 'admin';
+          }
         }
+        
+        setUser(authUser, role, token, userData);
+        setAuthModalOpen(false);
+      } catch (err) {
+        console.error("Error setting up user session:", err);
+        setUser(authUser, 'member', token, { name: authUser.displayName || 'Anonymous', role: 'member' });
       }
-      
-      setUser(authUser, role, token, userData);
-      setShowLoginModal(false);
     }, () => {
       setUser(null, null, null, null);
       navigate('/');
     });
 
     return () => unsubscribe();
-  }, [setUser, navigate]);
+  }, [setUser, navigate, setAuthModalOpen]);
 
   const handleProviderLogin = async (providerName: string, providerFn: () => Promise<any>) => {
     setAuthError('');
     try {
       await providerFn();
-      setShowLoginModal(false);
+      setAuthModalOpen(false);
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } catch (error: any) {
@@ -108,7 +112,7 @@ export default function Layout() {
       } else {
         await registerWithEmail(email, password);
       }
-      setShowLoginModal(false);
+      setAuthModalOpen(false);
       setEmail('');
       setPassword('');
       setConfirmPassword('');
@@ -153,7 +157,6 @@ export default function Layout() {
 
   const [setupData, setSetupData] = useState({ name: '', phone: '', billingAddress: '', shippingAddress: '' });
   const [isSubmittingSetup, setIsSubmittingSetup] = useState(false);
-  const [showEditProfile, setShowEditProfile] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   useEffect(() => {
@@ -165,7 +168,7 @@ export default function Layout() {
         shippingAddress: userData.shippingAddress || ''
       });
     }
-  }, [userData, showEditProfile]);
+  }, [userData, isProfileModalOpen]);
 
   const handleProfileSetup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,7 +187,7 @@ export default function Layout() {
       await updateDoc(userRef, updates);
       // Update local store
       setUser(user, userRole, useStore.getState().accessToken, { ...userData, ...updates });
-      setShowEditProfile(false);
+      setProfileModalOpen(false);
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } catch (error) {
@@ -206,10 +209,10 @@ export default function Layout() {
       )}
 
       {/* Login Modal */}
-      {showLoginModal && !user && (
+      {isAuthModalOpen && !user && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden relative">
-            <button onClick={() => setShowLoginModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
+            <button onClick={() => setAuthModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
               <X className="w-5 h-5" />
             </button>
             <div className="p-8">
@@ -316,16 +319,16 @@ export default function Layout() {
       )}
 
       {/* Profile Setup Modal */}
-      {userData && (!userData.isProfileComplete || showEditProfile) && (
+      {userData && (!userData.isProfileComplete || isProfileModalOpen) && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative">
-            {showEditProfile && (
-              <button onClick={() => setShowEditProfile(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
+            {isProfileModalOpen && (
+              <button onClick={() => setProfileModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             )}
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">{showEditProfile ? '修改基本資料' : '歡迎來到 FreshFlow OS!'}</h2>
-            <p className="text-slate-500 mb-6 text-sm">{showEditProfile ? '請更新您的個人或店家資料。' : '請完成您的個人或店家資料以開始使用。'}</p>
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">{isProfileModalOpen ? '修改基本資料' : '歡迎來到 FreshFlow OS!'}</h2>
+            <p className="text-slate-500 mb-6 text-sm">{isProfileModalOpen ? '請更新您的個人或店家資料。' : '請完成您的個人或店家資料以開始使用。'}</p>
             <form onSubmit={handleProfileSetup} className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1">姓名或店名</label>
@@ -395,7 +398,7 @@ export default function Layout() {
                     ) : (
                       <Link to="/orders" onClick={() => setShowProfileMenu(false)} className="block px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">訂單歷史</Link>
                     )}
-                    <button onClick={() => { setShowEditProfile(true); setShowProfileMenu(false); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">修改基本資料</button>
+                    <button onClick={() => { setProfileModalOpen(true); setShowProfileMenu(false); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">修改基本資料</button>
                     <div className="border-t border-slate-100 my-1"></div>
                     <button onClick={() => { handleLogout(); setShowProfileMenu(false); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium">登出</button>
                   </div>
@@ -404,7 +407,7 @@ export default function Layout() {
             </>
           ) : (
             <button
-              onClick={() => setShowLoginModal(true)}
+              onClick={() => setAuthModalOpen(true)}
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-6 rounded-xl text-sm shadow-lg shadow-emerald-600/20 transition-all"
             >
               登入 / 註冊
