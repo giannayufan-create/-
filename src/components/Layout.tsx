@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { initAuth, googleSignIn, facebookSignIn, yahooSignIn, loginWithEmail, registerWithEmail, logout, db, resetPassword } from '../lib/firebase';
 import { useStore } from '../lib/store';
@@ -70,7 +70,8 @@ export default function Layout() {
         setAuthModalOpen(false);
       } catch (err) {
         console.error("Error setting up user session:", err);
-        setUser(authUser, 'member', token, { name: authUser.displayName || 'Anonymous', role: 'member', isProfileComplete: false });
+        // Do not force isProfileComplete: false if there is an error, avoid trapping user
+        setUser(authUser, 'member', token, { name: authUser.displayName || 'Anonymous', role: 'member', isProfileComplete: true });
         setAuthModalOpen(false);
       }
     }, () => {
@@ -169,6 +170,19 @@ export default function Layout() {
   const [setupData, setSetupData] = useState({ name: '', phone: '', billingAddress: '', shippingAddress: '' });
   const [isSubmittingSetup, setIsSubmittingSetup] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     if (userData) {
@@ -369,13 +383,23 @@ export default function Layout() {
       )}
 
       <nav className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-6">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
               <div className="w-4 h-4 border-2 border-white rounded-sm italic font-bold text-[10px] flex items-center justify-center text-white">F</div>
             </div>
-            <span className="text-xl font-bold text-slate-800 tracking-tight">滷味小哥路人甲 <span className="text-emerald-600 font-medium text-sm ml-1">線上訂購</span></span>
+            <span className="text-xl font-bold text-slate-800 tracking-tight">滷味小哥路人甲 <span className="text-emerald-600 font-medium text-sm ml-1 hidden sm:inline">線上訂購</span></span>
           </Link>
+          
+          <div className="hidden md:flex items-center gap-6 pl-6 border-l border-slate-200">
+            <Link to="/" className="text-sm font-bold text-slate-600 hover:text-emerald-600 transition-colors">菜單</Link>
+            {user && userRole === 'admin' && (
+              <Link to="/admin" className="text-sm font-bold text-slate-600 hover:text-emerald-600 transition-colors">管理後台</Link>
+            )}
+            {user && userRole !== 'admin' && (
+              <Link to="/orders" className="text-sm font-bold text-slate-600 hover:text-emerald-600 transition-colors">我的訂單</Link>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-6">
@@ -388,7 +412,7 @@ export default function Layout() {
                 </p>
                 <p className="text-sm font-bold text-emerald-700">{userRole === 'admin' ? '管理員' : '會員'}</p>
               </div>
-              <div className="flex items-center gap-3 border-l border-slate-200 pl-6 relative">
+              <div className="flex items-center gap-3 border-l border-slate-200 pl-6 relative" ref={menuRef}>
                 <div className="w-10 h-10 bg-slate-200 rounded-full border-2 border-white shadow-sm overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-emerald-500 transition-all flex items-center justify-center text-slate-600" onClick={() => setShowProfileMenu(!showProfileMenu)}>
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" />
