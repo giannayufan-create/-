@@ -27,7 +27,8 @@ export default function Layout() {
       let role: 'admin' | 'member' = 'member';
       let userData: any = null;
       
-      const isAdminEmail = authUser.email === 'giannayufan@gmail.com' || authUser.email === 'ko520940@gmail.com';
+      const userEmail = (authUser.email || '').toLowerCase();
+      const isAdminEmail = userEmail === 'giannayufan@gmail.com' || userEmail === 'ko520940@gmail.com';
       
       if (!userSnap.exists()) {
         // Create user
