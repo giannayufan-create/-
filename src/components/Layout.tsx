@@ -196,13 +196,10 @@ export default function Layout() {
         updatedAt: new Date().toISOString()
       };
       
-      // Use a timeout to prevent hanging indefinitely
-      await Promise.race([
-        setDoc(userRef, updates, { merge: true }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('伺服器連線逾時，請檢查網路連線或稍後再試。')), 8000))
-      ]);
+      // Fire and forget to avoid hanging if offline or connection issues
+      setDoc(userRef, updates, { merge: true }).catch(err => console.error("Save error in background:", err));
 
-      // Update local store
+      // Update local store immediately
       setUser(user, userRole, useStore.getState().accessToken, { ...userData, ...updates });
       setProfileModalOpen(false);
       setShowToast(true);
