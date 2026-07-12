@@ -121,6 +121,18 @@ export default function Layout() {
 
   const [setupData, setSetupData] = useState({ name: '', phone: '', billingAddress: '', shippingAddress: '' });
   const [isSubmittingSetup, setIsSubmittingSetup] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+
+  useEffect(() => {
+    if (userData) {
+      setSetupData({
+        name: userData.name || '',
+        phone: userData.phone || '',
+        billingAddress: userData.billingAddress || '',
+        shippingAddress: userData.shippingAddress || ''
+      });
+    }
+  }, [userData, showEditProfile]);
 
   const handleProfileSetup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,7 +150,10 @@ export default function Layout() {
       };
       await updateDoc(userRef, updates);
       // Update local store
-      setUser(user, userRole, useStore.getState().accessToken, { ...useStore.getState().userData, ...updates });
+      setUser(user, userRole, useStore.getState().accessToken, { ...userData, ...updates });
+      setShowEditProfile(false);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
     } catch (error) {
       console.error('Setup error:', error);
       alert('儲存失敗');
@@ -234,11 +249,16 @@ export default function Layout() {
       )}
 
       {/* Profile Setup Modal */}
-      {userData && !userData.isProfileComplete && (
+      {userData && (!userData.isProfileComplete || showEditProfile) && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">歡迎來到 FreshFlow OS!</h2>
-            <p className="text-slate-500 mb-6 text-sm">請完成您的個人或店家資料以開始使用。</p>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative">
+            {showEditProfile && (
+              <button onClick={() => setShowEditProfile(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            )}
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">{showEditProfile ? '修改基本資料' : '歡迎來到 FreshFlow OS!'}</h2>
+            <p className="text-slate-500 mb-6 text-sm">{showEditProfile ? '請更新您的個人或店家資料。' : '請完成您的個人或店家資料以開始使用。'}</p>
             <form onSubmit={handleProfileSetup} className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1">姓名或店名</label>
@@ -278,11 +298,14 @@ export default function Layout() {
           {user ? (
             <>
               <div className="text-right hidden sm:block">
-                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">權限</p>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider flex items-center justify-end gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  已登入
+                </p>
                 <p className="text-sm font-bold text-emerald-700">{userRole === 'admin' ? '管理員' : '會員'}</p>
               </div>
               <div className="flex items-center gap-3 border-l border-slate-200 pl-6">
-                <div className="w-10 h-10 bg-slate-200 rounded-full border-2 border-white shadow-sm overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-emerald-500 transition-all flex items-center justify-center text-slate-600" onClick={handleLogout} title="Click to log out">
+                <div className="w-10 h-10 bg-slate-200 rounded-full border-2 border-white shadow-sm overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-red-500 transition-all flex items-center justify-center text-slate-600" onClick={handleLogout} title="登出">
                   {user.displayName ? (
                     <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.displayName}`} alt="Avatar" />
                   ) : (
@@ -297,6 +320,8 @@ export default function Layout() {
                     ) : (
                       <Link to="/orders" className="text-[10px] text-slate-500 hover:text-emerald-600 font-bold uppercase tracking-wide">訂單歷史</Link>
                     )}
+                    <span className="text-slate-300">|</span>
+                    <button onClick={() => setShowEditProfile(true)} className="text-[10px] text-slate-500 hover:text-emerald-600 font-bold uppercase tracking-wide">修改資料</button>
                   </div>
                 </div>
               </div>
