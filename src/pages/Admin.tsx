@@ -194,6 +194,7 @@ export default function Admin() {
         <button onClick={() => setActiveTab('orders')} className={`pb-4 px-2 font-bold text-sm tracking-wide ${activeTab === 'orders' ? 'border-b-2 border-emerald-600 text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}>最新訂單處理</button>
         <button onClick={() => setActiveTab('products')} className={`pb-4 px-2 font-bold text-sm tracking-wide ${activeTab === 'products' ? 'border-b-2 border-emerald-600 text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}>商品目錄管理</button>
         <button onClick={() => setActiveTab('customers')} className={`pb-4 px-2 font-bold text-sm tracking-wide ${activeTab === 'customers' ? 'border-b-2 border-emerald-600 text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}>客戶資料</button>
+        <button onClick={() => setActiveTab('reports')} className={`pb-4 px-2 font-bold text-sm tracking-wide ${activeTab === 'reports' ? 'border-b-2 border-emerald-600 text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}>銷售報表</button>
         <button onClick={() => setActiveTab('settings')} className={`pb-4 px-2 font-bold text-sm tracking-wide ${activeTab === 'settings' ? 'border-b-2 border-emerald-600 text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}>系統設定</button>
       </div>
 
@@ -211,19 +212,21 @@ export default function Admin() {
                   <th className="py-2">聯絡電話</th>
                   <th className="py-2">地址資訊</th>
                   <th className="py-2">Email</th>
+                  <th className="py-2">加入時間</th>
                   <th className="py-2">會員狀態</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
                 {users.map(u => (
                   <tr key={u.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                    <td className="py-4 font-bold text-slate-700">{u.storeName || u.name}</td>
+                    <td className="py-4 font-bold text-slate-700">{u.storeName || u.name || 'Anonymous'}</td>
                     <td className="py-4 text-slate-600">{u.phone || '-'}</td>
                     <td className="py-4 text-slate-600">
                       <div><span className="text-[10px] text-slate-400 uppercase">通訊:</span> {u.billingAddress || '-'}</div>
                       <div><span className="text-[10px] text-slate-400 uppercase">送貨:</span> {u.shippingAddress || '-'}</div>
                     </td>
                     <td className="py-4 text-slate-500">{u.email}</td>
+                    <td className="py-4 text-slate-500">{u.createdAt ? format(new Date(u.createdAt), 'yyyy年MM月dd日') : '-'}</td>
                     <td className="py-4">
                       {u.isProfileComplete ? (
                          <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold">資料完整</span>
@@ -276,7 +279,7 @@ export default function Admin() {
                       <div className="text-xs">{order.customerPhone || '-'}</div>
                       {order.shippingAddress && <div className="text-xs text-slate-400 truncate max-w-[200px]" title={order.shippingAddress}>{order.shippingAddress}</div>}
                     </td>
-                    <td className="py-4 text-slate-600">{format(new Date(order.createdAt), 'yyyy.MM.dd')}</td>
+                    <td className="py-4 text-slate-600">{format(new Date(order.createdAt), 'yyyy年MM月dd日 HH:mm')}</td>
                     <td className="py-4 text-slate-600">{order.items.map((i: any) => `${i.name} x ${i.quantity}`).join(', ')}</td>
                     <td className="py-4 font-bold text-slate-800">${order.total.toFixed(2)}</td>
                     <td className="py-4">
@@ -490,6 +493,64 @@ export default function Admin() {
           </div>
         </div>
       )}
+
+      {activeTab === 'reports' && (() => {
+        const monthlyStats: Record<string, Record<string, number>> = {};
+        const months = new Set<string>();
+
+        orders.forEach(order => {
+          if (order.status === 'cancelled') return;
+          const month = format(new Date(order.createdAt), 'yyyy年MM月');
+          months.add(month);
+          if (!monthlyStats[month]) monthlyStats[month] = {};
+          
+          order.items.forEach((item: any) => {
+            monthlyStats[month][item.name] = (monthlyStats[month][item.name] || 0) + item.quantity;
+          });
+        });
+
+        const sortedMonths = Array.from(months).sort((a, b) => b.localeCompare(a));
+
+        return (
+          <div className="flex-1 bg-white rounded-2xl border border-slate-200 p-6 flex flex-col shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-slate-800">銷售月報表</h3>
+            </div>
+            {sortedMonths.length === 0 ? (
+              <p className="text-slate-500 font-medium text-center py-8 border-2 border-dashed border-slate-200 rounded-2xl">目前沒有任何有效訂單記錄</p>
+            ) : (
+              <div className="space-y-8">
+                {sortedMonths.map(month => (
+                  <div key={month} className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <div className="bg-slate-50 px-6 py-3 border-b border-slate-200 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      <h4 className="font-bold text-emerald-800">{month}</h4>
+                    </div>
+                    <div className="p-0">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="text-[10px] text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 bg-white">
+                            <th className="py-3 px-6 font-bold">商品名稱</th>
+                            <th className="py-3 px-6 text-right font-bold">銷售數量</th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-sm">
+                          {Object.entries(monthlyStats[month]).sort((a, b) => b[1] - a[1]).map(([productName, quantity], idx, arr) => (
+                            <tr key={productName} className={`bg-white hover:bg-slate-50 transition-colors ${idx !== arr.length - 1 ? 'border-b border-slate-50' : ''}`}>
+                              <td className="py-4 px-6 font-medium text-slate-700">{productName}</td>
+                              <td className="py-4 px-6 text-right font-bold text-emerald-600 text-lg">{quantity}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {activeTab === 'settings' && (
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 max-w-lg">
