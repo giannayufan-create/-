@@ -23,7 +23,11 @@ export default function Layout() {
       try {
         // Fetch user role
         const userRef = doc(db, 'users', authUser.uid);
-        const userSnap = await getDoc(userRef);
+        // Use timeout to prevent hanging on init
+        const userSnap = await Promise.race([
+          getDoc(userRef),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('getDoc timeout')), 5000))
+        ]);
         let role: 'admin' | 'member' = 'member';
         let userData: any = null;
         
@@ -41,9 +45,10 @@ export default function Layout() {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           };
-          await setDoc(userRef, newUserData);
           userData = newUserData;
           role = newUserData.role as 'admin' | 'member';
+          // Fire and forget so we don't block login if offline
+          setDoc(userRef, newUserData).catch(e => console.warn("Could not create user doc", e));
         } else {
           userData = userSnap.data();
           role = userData.role || 'member';
@@ -51,12 +56,8 @@ export default function Layout() {
           // Auto-upgrade if it's the admin email but not admin yet
           if (isAdminEmail && role !== 'admin') {
              role = 'admin';
-             try {
-               await updateDoc(userRef, { role: 'admin', updatedAt: new Date().toISOString() });
-             } catch (e) {
-               console.warn("Could not auto-upgrade admin role", e);
-             }
              userData.role = 'admin';
+             updateDoc(userRef, { role: 'admin', updatedAt: new Date().toISOString() }).catch(e => console.warn("Could not auto-upgrade admin role", e));
           }
         }
         
@@ -194,7 +195,13 @@ export default function Layout() {
         isProfileComplete: true,
         updatedAt: new Date().toISOString()
       };
-      await setDoc(userRef, updates, { merge: true });
+      
+      // Use a timeout to prevent hanging indefinitely
+      await Promise.race([
+        setDoc(userRef, updates, { merge: true }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('伺服器連線逾時，請檢查網路連線或稍後再試。')), 8000))
+      ]);
+
       // Update local store
       setUser(user, userRole, useStore.getState().accessToken, { ...userData, ...updates });
       setProfileModalOpen(false);
@@ -386,10 +393,10 @@ export default function Layout() {
               </div>
               <div className="flex items-center gap-3 border-l border-slate-200 pl-6 relative">
                 <div className="w-10 h-10 bg-slate-200 rounded-full border-2 border-white shadow-sm overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-emerald-500 transition-all flex items-center justify-center text-slate-600" onClick={() => setShowProfileMenu(!showProfileMenu)}>
-                  {user.displayName ? (
-                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.displayName}`} alt="Avatar" />
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
-                    <UserIcon className="w-6 h-6" />
+                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.displayName || user.email || 'User'}`} alt="Avatar" className="w-full h-full object-cover" />
                   )}
                 </div>
                 <div className="leading-none hidden sm:block">
