@@ -194,15 +194,15 @@ export default function Layout() {
         isProfileComplete: true,
         updatedAt: new Date().toISOString()
       };
-      await updateDoc(userRef, updates);
+      await setDoc(userRef, updates, { merge: true });
       // Update local store
       setUser(user, userRole, useStore.getState().accessToken, { ...userData, ...updates });
       setProfileModalOpen(false);
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Setup error:', error);
-      alert('儲存失敗');
+      alert('儲存失敗: ' + (error.message || '未知錯誤'));
     } finally {
       setIsSubmittingSetup(false);
     }
