@@ -43,8 +43,8 @@ export default function Layout() {
           };
           userData = newUserData;
           role = newUserData.role as 'admin' | 'member';
-          // Fire and forget so we don't block login if offline
-          setDoc(userRef, newUserData).catch(e => console.warn("Could not create user doc", e));
+          // Await to make sure it's created in the backend
+          await setDoc(userRef, newUserData).catch(e => console.warn("Could not create user doc", e));
         } else {
           userData = userSnap.data();
           role = userData.role || 'member';
@@ -209,8 +209,8 @@ export default function Layout() {
         updatedAt: new Date().toISOString()
       };
       
-      // Fire and forget to avoid hanging if offline or connection issues
-      setDoc(userRef, updates, { merge: true }).catch(err => console.error("Save error in background:", err));
+      // Await to ensure it's saved in the backend
+      await setDoc(userRef, updates, { merge: true }).catch(err => console.error("Save error:", err));
 
       // Update local store immediately
       setUser(user, userRole, useStore.getState().accessToken, { ...userData, ...updates });
