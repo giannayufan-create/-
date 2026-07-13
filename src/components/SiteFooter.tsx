@@ -1,4 +1,4 @@
-import { Phone, MapPin, MessageCircle } from 'lucide-react';
+import { Phone, MapPin, MessageCircle, Truck } from 'lucide-react';
 import { useSiteSettings } from '../lib/useSettings';
 
 export default function SiteFooter() {
@@ -29,9 +29,12 @@ export default function SiteFooter() {
             </div>
           </div>
           <div>
-            <h4 className="font-display text-[#f0d2b0] text-sm font-bold mb-4 tracking-wider">{texts.footerBusiness}</h4>
-            <p className="text-sm text-[#b8a48f] leading-relaxed">{texts.footerBusinessDesc1}</p>
-            <p className="text-sm text-[#b8a48f] mt-2">{texts.footerBusinessDesc2}</p>
+            <h4 className="font-display text-[#f0d2b0] text-sm font-bold mb-4 tracking-wider flex items-center gap-2">
+              <Truck className="w-4 h-4 text-[var(--color-ember)]" />
+              配送資訊
+            </h4>
+            <p className="text-sm text-[#e8c49a] font-medium leading-relaxed">送貨：新竹以北</p>
+            <p className="text-sm text-[#b8a48f] mt-2">不限金額配送</p>
           </div>
         </div>
         <div className="border-t border-white/10 mt-10 pt-6 text-center text-xs text-[#8a7766] tracking-wide">

@@ -35,7 +35,7 @@ export const DEFAULT_SETTINGS = {
     { image: '', title: '手工水餃', subtitle: '皮薄餡多，真材實料' },
     { image: '', title: '經典滷味', subtitle: '滷汁入味，回味無窮' },
   ],
-  footerText: '感謝您的支持，如有問題歡迎 LINE 聯繫我們！',
+  footerText: '感謝您的支持！送貨新竹以北，不限金額配送。如有問題歡迎 LINE 聯繫我們！',
   categoryOrder: ['火鍋料', '水餃', '滷味'],
   subCategories: DEFAULT_SUB_CATEGORIES,
 };

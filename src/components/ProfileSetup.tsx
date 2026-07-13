@@ -91,17 +91,17 @@ export default function ProfileSetup() {
   if (!user || !userData || isAuthLoading || !isProfileReady || !isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[400] bg-[var(--color-ink)]/55 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-[#fffcf8] rounded-3xl shadow-[0_24px_60px_-24px_rgba(28,20,16,0.45)] border border-[#eadfce] w-full max-w-md p-8 relative max-h-[90vh] overflow-y-auto">
         {!mustComplete && (
-          <button onClick={() => setProfileModalOpen(false)} className="absolute top-4 right-4 text-stone-400 hover:text-stone-600">
+          <button onClick={() => setProfileModalOpen(false)} className="absolute top-4 right-4 text-[#9a8674] hover:text-[var(--color-ink)]">
             <X className="w-5 h-5" />
           </button>
         )}
-        <h2 className="text-xl font-black text-stone-900 mb-1">
+        <h2 className="font-display text-xl font-bold text-[var(--color-ink)] mb-1">
           {mustComplete ? `👋 ${texts.profileWelcome}` : '修改會員資料'}
         </h2>
-        <p className="text-sm text-stone-500 mb-6">
+        <p className="text-sm text-[#7a6555] mb-6">
           {mustComplete ? texts.profileWelcomeDesc : '更新您的聯絡與配送資訊'}
         </p>
 
