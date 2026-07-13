@@ -17,6 +17,20 @@ export default function Layout() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [authError, setAuthError] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('登入成功！');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const prevAuthModalOpen = useRef(isAuthModalOpen);
+
+  useEffect(() => {
+    if (user && prevAuthModalOpen.current && !isAuthModalOpen) {
+      setToastMessage(authMode === 'register' ? '註冊成功！' : '登入成功！');
+      setShowToast(true);
+      const timer = setTimeout(() => setShowToast(false), 3000);
+      prevAuthModalOpen.current = isAuthModalOpen;
+      return () => clearTimeout(timer);
+    }
+    prevAuthModalOpen.current = isAuthModalOpen;
+  }, [user, isAuthModalOpen, authMode]);
 
   useEffect(() => {
     const unsubscribe = initAuth(async (authUser, token) => {
@@ -229,9 +243,9 @@ export default function Layout() {
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       {/* Toast Notification */}
       {showToast && (
-        <div className="fixed top-4 right-4 z-[60] bg-emerald-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-300">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-          <span className="font-bold">登入成功！</span>
+        <div className="fixed top-4 left-4 right-4 md:left-auto md:right-4 md:w-auto z-[60] bg-emerald-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center justify-center md:justify-start gap-2 animate-in fade-in slide-in-from-top-4 duration-300">
+          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+          <span className="font-bold">{toastMessage}</span>
         </div>
       )}
 
@@ -381,6 +395,95 @@ export default function Layout() {
         </div>
       )}
 
+      {/* Mobile Member Menu Modal */}
+      {isMobileMenuOpen && user && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-end justify-center p-0 sm:p-4">
+          <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-xl w-full max-w-md overflow-hidden relative animate-in slide-in-from-bottom duration-300">
+            <button onClick={() => setIsMobileMenuOpen(false)} className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition-colors bg-slate-100 p-1.5 rounded-full">
+              <X className="w-4 h-4" />
+            </button>
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
+                <div className="w-14 h-14 bg-slate-100 rounded-full border-2 border-emerald-500 overflow-hidden flex items-center justify-center">
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.displayName || user.email || 'User'}`} alt="Avatar" className="w-full h-full object-cover" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800">{setupData.name || user.displayName || user.email || '會員'}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                      {userRole === 'admin' ? '管理員' : '一般會員'}
+                    </span>
+                    {userData?.points !== undefined && (
+                      <span className="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                        點數: {userData.points} P
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1.5 truncate max-w-[220px]">{user.email}</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <button 
+                  onClick={() => { 
+                    setProfileModalOpen(true); 
+                    setIsMobileMenuOpen(false); 
+                  }} 
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-emerald-600/10 transition-all flex items-center justify-center gap-2"
+                >
+                  <UserIcon className="w-5 h-5" />
+                  修改基本資料
+                </button>
+
+                {userRole === 'admin' ? (
+                  <button 
+                    onClick={() => { 
+                      navigate('/admin'); 
+                      setIsMobileMenuOpen(false); 
+                    }} 
+                    className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2"
+                  >
+                    <LayoutDashboard className="w-5 h-5" />
+                    進入管理後台
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => { 
+                      navigate('/orders'); 
+                      setIsMobileMenuOpen(false); 
+                    }} 
+                    className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2"
+                  >
+                    <Package className="w-5 h-5" />
+                    我的歷史訂單
+                  </button>
+                )}
+
+                <div className="pt-2">
+                  <button 
+                    onClick={() => { 
+                      handleLogout(); 
+                      setIsMobileMenuOpen(false); 
+                      setToastMessage('登出成功！');
+                      setShowToast(true);
+                      setTimeout(() => setShowToast(false), 3000);
+                    }} 
+                    className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    登出帳號
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <nav className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
         <div className="flex items-center gap-6">
           <Link to="/" className="flex items-center gap-3">
@@ -498,7 +601,7 @@ export default function Layout() {
             </Link>
           )
         ) : null}
-        <button onClick={() => user ? setProfileModalOpen(true) : setAuthModalOpen(true)} className="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600">
+        <button onClick={() => user ? setIsMobileMenuOpen(true) : setAuthModalOpen(true)} className="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600">
           <UserIcon className="w-5 h-5 mb-1" />
           <span className="text-[10px] font-bold">{user ? '會員' : '登入'}</span>
         </button>
