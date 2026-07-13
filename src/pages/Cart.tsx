@@ -1,27 +1,57 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, doc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useStore } from '../lib/store';
 import { notifyOrderPlaced } from '../lib/orderNotify';
 import { DELIVERY_TIME_SLOTS, minDeliveryDate, maxDeliveryDate } from '../lib/deliverySlots';
-import { Minus, Plus, Trash2, ShoppingCart, ArrowRight, AlertCircle, Loader2, CheckCircle, Calendar } from 'lucide-react';
+import { Minus, Plus, Trash2, ShoppingCart, ArrowRight, AlertCircle, Loader2, CheckCircle, Calendar, Wallet, Truck } from 'lucide-react';
 import { useSiteSettings } from '../lib/useSettings';
+import { DELIVERY_METHOD_OPTIONS, PAYMENT_METHOD_OPTIONS, PaymentMethodId, DeliveryMethodId } from '../types';
 
 export default function Cart() {
   const { cart, cartTotal, updateQuantity, removeFromCart, clearCart, user, userData, setAuthModalOpen, setProfileModalOpen } = useStore();
-  const { texts } = useSiteSettings();
+  const { settings, texts } = useSiteSettings();
   const [products, setProducts] = useState<any[]>([]);
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
   const [deliveryTime, setDeliveryTime] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId | ''>('');
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethodId | ''>('');
   const navigate = useNavigate();
+
+  const paymentOptions = useMemo(() => PAYMENT_METHOD_OPTIONS.map((o) => ({
+    ...o,
+    enabled:
+      o.id === 'cash' ? settings.paymentCashEnabled !== false
+      : o.id === 'transfer' ? !!settings.paymentTransferEnabled
+      : !!settings.paymentCreditEnabled,
+  })), [settings.paymentCashEnabled, settings.paymentTransferEnabled, settings.paymentCreditEnabled]);
+
+  const deliveryOptions = useMemo(() => DELIVERY_METHOD_OPTIONS.map((o) => ({
+    ...o,
+    enabled: o.id === 'personal' ? settings.deliveryPersonalEnabled !== false : false,
+  })), [settings.deliveryPersonalEnabled]);
+
+  const enabledPayments = paymentOptions.filter((o) => o.enabled);
+  const enabledDeliveries = deliveryOptions.filter((o) => o.enabled);
+  const onlyCashOpen = enabledPayments.length === 1 && enabledPayments[0]?.id === 'cash';
 
   useEffect(() => {
     return onSnapshot(collection(db, 'products'), (s) => setProducts(s.docs.map((d) => ({ id: d.id, ...d.data() }))));
   }, []);
+
+  useEffect(() => {
+    if (!paymentMethod && enabledPayments.length === 1) setPaymentMethod(enabledPayments[0].id);
+    if (paymentMethod && !enabledPayments.some((o) => o.id === paymentMethod)) setPaymentMethod('');
+  }, [enabledPayments, paymentMethod]);
+
+  useEffect(() => {
+    if (!deliveryMethod && enabledDeliveries.length === 1) setDeliveryMethod(enabledDeliveries[0].id);
+    if (deliveryMethod && !enabledDeliveries.some((o) => o.id === deliveryMethod)) setDeliveryMethod('');
+  }, [enabledDeliveries, deliveryMethod]);
 
   const oversold = cart.some((item) => {
     const p = products.find((x) => x.id === item.productId);
@@ -31,9 +61,16 @@ export default function Cart() {
   const checkout = async () => {
     if (!user) { setAuthModalOpen(true); return; }
     if (!userData?.isProfileComplete) { setProfileModalOpen(true); return; }
+    if (!deliveryMethod) { setError('請選擇配送方式'); return; }
+    if (!paymentMethod) { setError('請選擇付款方式'); return; }
+    if (!enabledPayments.some((o) => o.id === paymentMethod)) { setError('此付款方式尚未開放'); return; }
+    if (!enabledDeliveries.some((o) => o.id === deliveryMethod)) { setError('此配送方式尚未開放'); return; }
     if (!deliveryDate) { setError('請選擇配送日期'); return; }
     if (!deliveryTime) { setError('請選擇配送時間'); return; }
     setError(''); setSuccess(''); setChecking(true);
+
+    const paymentLabel = PAYMENT_METHOD_OPTIONS.find((o) => o.id === paymentMethod)?.label || paymentMethod;
+    const deliveryLabel = DELIVERY_METHOD_OPTIONS.find((o) => o.id === deliveryMethod)?.label || deliveryMethod;
 
     try {
       const orderRef = doc(collection(db, 'orders'));
@@ -59,6 +96,8 @@ export default function Cart() {
           shippingAddress: userData.shippingAddress,
           deliveryDate,
           deliveryTime,
+          paymentMethod: paymentLabel,
+          deliveryMethod: deliveryLabel,
           items: cart,
           total: cartTotal,
           status: 'pending',
@@ -76,6 +115,8 @@ export default function Cart() {
         shippingAddress: userData.shippingAddress,
         deliveryDate,
         deliveryTime,
+        paymentMethod: paymentLabel,
+        deliveryMethod: deliveryLabel,
         items: [...cart],
         total: cartTotal,
         createdAt: now,
@@ -98,7 +139,7 @@ export default function Cart() {
         <ShoppingCart className="w-16 h-16 text-stone-300 mb-4" />
         <h2 className="text-xl font-black text-stone-800 mb-2">{texts.cartEmptyTitle}</h2>
         <p className="text-sm text-stone-500 mb-6">{texts.cartEmptyDesc}</p>
-        <button onClick={() => navigate('/')} className="bg-amber-600 text-white font-bold px-8 py-3 rounded-xl">{texts.cartGoMenu}</button>
+        <button type="button" onClick={() => navigate('/')} className="bg-amber-600 text-white font-bold px-8 py-3 rounded-xl">{texts.cartGoMenu}</button>
       </div>
     );
   }
@@ -138,7 +179,7 @@ export default function Cart() {
                     {!soldOut && over && <p className="text-xs text-red-600 font-bold mt-1">庫存僅剩 {stock} 份</p>}
                   </div>
                   <div className="flex items-center gap-1 bg-stone-100 rounded-xl p-1">
-                    <button onClick={() => updateQuantity(item.productId, Math.max(1, item.quantity - 1))} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white"><Minus className="w-3.5 h-3.5" /></button>
+                    <button type="button" onClick={() => updateQuantity(item.productId, Math.max(1, item.quantity - 1))} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white"><Minus className="w-3.5 h-3.5" /></button>
                     <input
                       type="number"
                       min={1}
@@ -152,10 +193,10 @@ export default function Cart() {
                       }}
                       className="w-12 text-center font-bold text-sm bg-white rounded-lg border border-stone-200 py-1 focus:outline-none focus:ring-2 focus:ring-amber-400/40 disabled:opacity-40"
                     />
-                    <button disabled={soldOut || item.quantity >= stock} onClick={() => updateQuantity(item.productId, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white disabled:opacity-30"><Plus className="w-3.5 h-3.5" /></button>
+                    <button type="button" disabled={soldOut || item.quantity >= stock} onClick={() => updateQuantity(item.productId, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white disabled:opacity-30"><Plus className="w-3.5 h-3.5" /></button>
                   </div>
                   <p className="font-bold text-stone-800 w-16 text-right">${(item.price * item.quantity).toFixed(0)}</p>
-                  <button onClick={() => removeFromCart(item.productId)} className="text-stone-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                  <button type="button" onClick={() => removeFromCart(item.productId)} className="text-stone-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
                 </div>
               );
             })}
@@ -166,9 +207,82 @@ export default function Cart() {
               <p className="font-bold text-stone-700 mb-2">配送資訊</p>
               <p className="text-stone-600">{userData.name} · {userData.phone}</p>
               <p className="text-stone-500 text-xs mt-1">{userData.shippingAddress}</p>
-              <button onClick={() => setProfileModalOpen(true)} className="text-xs text-amber-600 font-bold mt-2">修改 →</button>
+              <button type="button" onClick={() => setProfileModalOpen(true)} className="text-xs text-amber-600 font-bold mt-2">修改 →</button>
             </div>
           )}
+
+          <div className="bg-white rounded-2xl border border-stone-200 p-4 mb-4">
+            <p className="font-bold text-stone-700 mb-2 flex items-center gap-2">
+              <Truck className="w-4 h-4 text-amber-600" />
+              配送方式 <span className="text-red-500">*</span>
+            </p>
+            <p className="text-xs text-stone-500 mb-3">目前僅提供本人親自送達</p>
+            <div className="space-y-2">
+              {deliveryOptions.map((opt) => (
+                <label
+                  key={opt.id}
+                  className={`flex items-center gap-3 rounded-xl border px-3 py-3 text-sm font-bold ${
+                    !opt.enabled
+                      ? 'border-stone-100 bg-stone-50 text-stone-400 cursor-not-allowed'
+                      : deliveryMethod === opt.id
+                        ? 'border-amber-400 bg-amber-50 text-amber-900 cursor-pointer'
+                        : 'border-stone-200 bg-white text-stone-700 cursor-pointer hover:border-amber-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="deliveryMethod"
+                    className="accent-amber-600"
+                    disabled={!opt.enabled}
+                    checked={deliveryMethod === opt.id}
+                    onChange={() => setDeliveryMethod(opt.id)}
+                  />
+                  <span className="flex-1">{opt.label}</span>
+                  {!opt.enabled && <span className="text-[10px] font-bold text-stone-400">尚未開放</span>}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-stone-200 p-4 mb-4">
+            <p className="font-bold text-stone-700 mb-2 flex items-center gap-2">
+              <Wallet className="w-4 h-4 text-amber-600" />
+              付款方式 <span className="text-red-500">*</span>
+            </p>
+            {onlyCashOpen && (
+              <p className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-3">
+                目前只接受現金
+              </p>
+            )}
+            <div className="space-y-2">
+              {paymentOptions.map((opt) => (
+                <label
+                  key={opt.id}
+                  className={`flex items-center gap-3 rounded-xl border px-3 py-3 text-sm font-bold ${
+                    !opt.enabled
+                      ? 'border-stone-100 bg-stone-50 text-stone-400 cursor-not-allowed'
+                      : paymentMethod === opt.id
+                        ? 'border-amber-400 bg-amber-50 text-amber-900 cursor-pointer'
+                        : 'border-stone-200 bg-white text-stone-700 cursor-pointer hover:border-amber-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    className="accent-amber-600"
+                    disabled={!opt.enabled}
+                    checked={paymentMethod === opt.id}
+                    onChange={() => setPaymentMethod(opt.id)}
+                  />
+                  <span className="flex-1">{opt.label}</span>
+                  {!opt.enabled && <span className="text-[10px] font-bold text-stone-400">尚未開放</span>}
+                  {opt.enabled && opt.id === 'cash' && onlyCashOpen && (
+                    <span className="text-[10px] font-bold text-amber-700">目前可選</span>
+                  )}
+                </label>
+              ))}
+            </div>
+          </div>
 
           <div className="bg-white rounded-2xl border border-stone-200 p-4 mb-6">
             <p className="font-bold text-stone-700 mb-3 flex items-center gap-2">
@@ -198,9 +312,13 @@ export default function Cart() {
               <span className="font-bold text-[#6b5648]">總計</span>
               <span className="font-display text-3xl font-bold text-[var(--color-copper)]">${cartTotal.toFixed(0)}</span>
             </div>
-            <p className="text-xs text-[#9a8674] mb-4">{texts.checkoutNote}</p>
-            <button onClick={checkout} disabled={checking || oversold || !deliveryDate || !deliveryTime}
-              className="w-full btn-ink font-bold py-4 rounded-xl flex items-center justify-center gap-2 disabled:opacity-40">
+            <p className="text-xs text-[#9a8674] mb-4">{texts.checkoutNote || '結帳後商家會盡速為您安排送貨'}</p>
+            <button
+              type="button"
+              onClick={checkout}
+              disabled={checking || oversold || !deliveryDate || !deliveryTime || !paymentMethod || !deliveryMethod}
+              className="w-full btn-ink font-bold py-4 rounded-xl flex items-center justify-center gap-2 disabled:opacity-40"
+            >
               {checking ? <><Loader2 className="w-5 h-5 animate-spin" />處理中...</> : <><span>{texts.checkoutBtn}</span><ArrowRight className="w-5 h-5" /></>}
             </button>
           </div>

@@ -10,6 +10,8 @@ export interface OrderData {
   shippingAddress: string;
   deliveryDate?: string;
   deliveryTime?: string;
+  paymentMethod?: string;
+  deliveryMethod?: string;
   items: CartItem[];
   total: number;
   createdAt: string;
@@ -25,6 +27,8 @@ export function buildOrderCsv(order: OrderData): string {
     ['送貨地址', order.shippingAddress],
     ['配送日期', order.deliveryDate || '—'],
     ['配送時間', order.deliveryTime || '—'],
+    ['配送方式', order.deliveryMethod || '—'],
+    ['付款方式', order.paymentMethod || '—'],
     ['', ''],
     ['項次', '商品名稱', '單價', '數量', '小計'],
     ...order.items.map((item, i) => [
@@ -62,6 +66,8 @@ export function buildOrderEmailText(order: OrderData, forAdmin: boolean): string
     `送貨地址：${order.shippingAddress}`,
     `配送日期：${order.deliveryDate || '—'}`,
     `配送時間：${order.deliveryTime || '—'}`,
+    `配送方式：${order.deliveryMethod || '—'}`,
+    `付款方式：${order.paymentMethod || '—'}`,
     '',
     '── 訂購明細 ──',
     ...order.items.map((item, i) =>
@@ -78,13 +84,15 @@ export function buildOrderEmailText(order: OrderData, forAdmin: boolean): string
 export function downloadAdminOrdersCsv(orders: any[], filename: string) {
   if (!orders.length) return;
   const STATUS: Record<string, string> = { pending: '待處理', processing: '處理中', processed: '已完成', cancelled: '已取消' };
-  const headers = ['訂單編號', '狀態', '下單時間', '配送日期', '配送時間', '客戶', '電話', 'Email', '地址', '商品明細', '總計'];
+  const headers = ['訂單編號', '狀態', '下單時間', '配送日期', '配送時間', '配送方式', '付款方式', '客戶', '電話', 'Email', '地址', '商品明細', '總計'];
   const rows = orders.map((o) => [
     o.id.slice(0, 8),
     STATUS[o.status] || o.status,
     format(new Date(o.createdAt), 'yyyy/MM/dd HH:mm'),
     o.deliveryDate || '',
     o.deliveryTime || '',
+    o.deliveryMethod || '',
+    o.paymentMethod || '',
     o.customerName,
     o.customerPhone,
     o.customerEmail || '',
@@ -102,12 +110,14 @@ export function downloadAdminOrdersCsv(orders: any[], filename: string) {
 
 export function downloadOrdersListCsv(orders: OrderData[], filename: string) {
   if (!orders.length) return;
-  const headers = ['訂單編號', '下單時間', '配送日期', '配送時間', '客戶', '電話', '地址', '商品明細', '總計'];
+  const headers = ['訂單編號', '下單時間', '配送日期', '配送時間', '配送方式', '付款方式', '客戶', '電話', '地址', '商品明細', '總計'];
   const rows = orders.map((o) => [
     o.id.slice(0, 8),
     format(new Date(o.createdAt), 'yyyy/MM/dd HH:mm'),
     o.deliveryDate || '',
     o.deliveryTime || '',
+    o.deliveryMethod || '',
+    o.paymentMethod || '',
     o.customerName,
     o.customerPhone,
     o.shippingAddress,

@@ -55,12 +55,29 @@ export interface Order {
   shippingAddress: string;
   deliveryDate: string;
   deliveryTime: string;
+  /** 付款方式：現金 / 轉帳 / 信用卡 */
+  paymentMethod: string;
+  /** 配送方式：本人親自送達 等 */
+  deliveryMethod: string;
   items: CartItem[];
   total: number;
   status: OrderStatus;
   createdAt: string;
   updatedAt: string;
 }
+
+export type PaymentMethodId = 'cash' | 'transfer' | 'credit';
+export type DeliveryMethodId = 'personal';
+
+export const PAYMENT_METHOD_OPTIONS: { id: PaymentMethodId; label: string }[] = [
+  { id: 'cash', label: '現金' },
+  { id: 'transfer', label: '轉帳' },
+  { id: 'credit', label: '信用卡' },
+];
+
+export const DELIVERY_METHOD_OPTIONS: { id: DeliveryMethodId; label: string }[] = [
+  { id: 'personal', label: '本人親自送達' },
+];
 
 export interface CarouselSlide {
   image: string;
@@ -109,6 +126,12 @@ export interface SiteSettings {
   categoryCardSizes: Record<string, CardSizeId>;
   /** 未指定大類時的預設尺寸 */
   defaultCardSize: CardSizeId;
+  /** 後台可開關的付款方式 */
+  paymentCashEnabled: boolean;
+  paymentTransferEnabled: boolean;
+  paymentCreditEnabled: boolean;
+  /** 後台可開關的配送方式 */
+  deliveryPersonalEnabled: boolean;
   pageTexts: PageTexts;
 }
 

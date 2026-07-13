@@ -44,4 +44,8 @@ export const DEFAULT_SETTINGS = {
     '水餃': 'L',
     '滷味': 'M',
   } as Record<string, 'S' | 'M' | 'L' | 'XL'>,
+  paymentCashEnabled: true,
+  paymentTransferEnabled: false,
+  paymentCreditEnabled: false,
+  deliveryPersonalEnabled: true,
 };

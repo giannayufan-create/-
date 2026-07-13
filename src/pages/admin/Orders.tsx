@@ -179,6 +179,8 @@ export default function AdminOrders() {
                   <p className="text-sm font-bold text-stone-800 mt-1">{o.customerName} · {o.customerPhone}</p>
                   <p className="text-xs text-stone-500">{format(new Date(o.createdAt), 'yyyy/MM/dd HH:mm')}
                     {o.deliveryDate && <span className="text-amber-700 font-bold ml-2">配送 {o.deliveryDate} {o.deliveryTime}</span>}
+                    {o.deliveryMethod && <span className="text-stone-500 ml-2">· {o.deliveryMethod}</span>}
+                    {o.paymentMethod && <span className="text-stone-500 ml-2">· 付款 {o.paymentMethod}</span>}
                   </p>
                 </div>
                 <p className={`text-xl font-black ${cancelled ? 'text-stone-400 line-through' : 'text-emerald-700'}`}>${o.total}</p>

@@ -6,7 +6,7 @@ import { PAGE_TEXT_FIELDS } from '../../lib/pageTexts';
 import { CarouselSlide } from '../../types';
 import {
   Layout, Image, Type, GripVertical, Plus, Trash2, ChevronUp, ChevronDown,
-  Check, Loader2, Star, Music, Save, Eye, ImagePlus, Scaling,
+  Check, Loader2, Star, Music, Save, Eye, ImagePlus, Scaling, Wallet,
 } from 'lucide-react';
 import { CARD_SIZE_PRESETS, CardSizeId } from '../../types';
 import { fileToBase64Hero } from '../../lib/imageUpload';
@@ -14,6 +14,7 @@ import { fileToBase64Hero } from '../../lib/imageUpload';
 const SECTIONS = [
   { id: 'carousel', label: '首頁輪播', icon: Image, color: 'from-amber-500 to-orange-500' },
   { id: 'sizes', label: '卡片尺寸', icon: Scaling, color: 'from-rose-500 to-orange-600' },
+  { id: 'checkout', label: '結帳方式', icon: Wallet, color: 'from-cyan-500 to-blue-600' },
   { id: 'texts', label: '前台文案', icon: Type, color: 'from-blue-500 to-indigo-500' },
   { id: 'categories', label: '分類排序', icon: Layout, color: 'from-emerald-500 to-teal-500' },
   { id: 'store', label: '店家資訊', icon: Star, color: 'from-purple-500 to-pink-500' },
@@ -211,6 +212,56 @@ export default function SiteManager() {
                   </select>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {active === 'checkout' && (
+          <div className="space-y-5">
+            <div>
+              <h2 className="font-black text-lg text-stone-900">結帳方式設定</h2>
+              <p className="text-xs text-stone-500 mt-1">開關付款／配送方式，未開放的選項前台會顯示「尚未開放」</p>
+            </div>
+            <div className="bg-stone-50 rounded-xl p-4 space-y-3 border border-stone-100">
+              <p className="font-bold text-stone-800 text-sm">付款方式</p>
+              {[
+                { key: 'paymentCashEnabled' as const, label: '現金', hint: '建議維持開啟' },
+                { key: 'paymentTransferEnabled' as const, label: '轉帳', hint: '開放後前台可選' },
+                { key: 'paymentCreditEnabled' as const, label: '信用卡', hint: '開放後前台可選（尚未串金流）' },
+              ].map((f) => (
+                <label key={f.key} className="flex items-center justify-between gap-3 bg-white rounded-xl border border-stone-200 px-4 py-3 cursor-pointer">
+                  <div>
+                    <p className="font-bold text-stone-800 text-sm">{f.label}</p>
+                    <p className="text-[11px] text-stone-400">{f.hint}</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={!!(settings as any)[f.key]}
+                    onChange={(e) => setSettings({ ...settings, [f.key]: e.target.checked })}
+                    className="w-5 h-5 accent-amber-600"
+                  />
+                </label>
+              ))}
+              {!settings.paymentTransferEnabled && !settings.paymentCreditEnabled && settings.paymentCashEnabled && (
+                <p className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                  目前前台會標註：目前只接受現金
+                </p>
+              )}
+            </div>
+            <div className="bg-stone-50 rounded-xl p-4 space-y-3 border border-stone-100">
+              <p className="font-bold text-stone-800 text-sm">配送方式</p>
+              <label className="flex items-center justify-between gap-3 bg-white rounded-xl border border-stone-200 px-4 py-3 cursor-pointer">
+                <div>
+                  <p className="font-bold text-stone-800 text-sm">本人親自送達</p>
+                  <p className="text-[11px] text-stone-400">目前僅此一種</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={settings.deliveryPersonalEnabled !== false}
+                  onChange={(e) => setSettings({ ...settings, deliveryPersonalEnabled: e.target.checked })}
+                  className="w-5 h-5 accent-amber-600"
+                />
+              </label>
             </div>
           </div>
         )}

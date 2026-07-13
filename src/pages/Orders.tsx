@@ -105,7 +105,10 @@ export default function Orders() {
                   <p className="font-mono font-bold text-stone-700 text-sm">#{o.id.slice(0, 8)}</p>
                   <p className="text-xs text-stone-400">{format(new Date(o.createdAt), 'yyyy/MM/dd HH:mm')}</p>
                   {o.deliveryDate && (
-                    <p className="text-xs text-amber-700 font-bold mt-1">配送：{o.deliveryDate} {o.deliveryTime}</p>
+                    <p className="text-xs text-amber-700 font-bold mt-1">配送：{o.deliveryDate} {o.deliveryTime}{o.deliveryMethod ? ` · ${o.deliveryMethod}` : ''}</p>
+                  )}
+                  {o.paymentMethod && (
+                    <p className="text-xs text-stone-500 font-bold mt-0.5">付款：{o.paymentMethod}</p>
                   )}
                 </div>
                 <span className={`text-xs font-bold px-3 py-1 rounded-full ${STATUS[o.status]?.color || ''}`}>

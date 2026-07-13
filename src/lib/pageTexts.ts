@@ -56,7 +56,7 @@ export const DEFAULT_PAGE_TEXTS: PageTexts = {
   deliveryDateLabel: '配送日期',
   deliveryTimeLabel: '配送時段',
   checkoutBtn: '確認結帳',
-  checkoutNote: '訂單已通知商家',
+  checkoutNote: '結帳後商家會盡速為您安排送貨',
   checkoutSuccessTitle: '訂單已完成等待配送',
   checkoutSuccessContact: '有任何問題 請聯絡 滷味小哥路人甲',
   ordersTitle: '我的訂單',
