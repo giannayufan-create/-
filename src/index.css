@@ -156,3 +156,8 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+body.select-none,
+body.select-none * {
+  user-select: none !important;
+}
