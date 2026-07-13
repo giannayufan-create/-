@@ -63,6 +63,10 @@ export default function Storefront() {
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
 
   const confirmAdd = (p: any) => {
+    if (p.stock <= 0) {
+      showToast('目前缺貨中');
+      return;
+    }
     const pickQty = getPickQty(p.id);
     const inCart = cart.find((i) => i.productId === p.id)?.quantity || 0;
     if (inCart + pickQty > p.stock) {
@@ -80,12 +84,12 @@ export default function Storefront() {
     const maxPick = Math.max(0, p.stock - inCart);
 
     return (
-      <div className="bg-white rounded-2xl border border-stone-100 overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 flex flex-col">
+      <div className={`bg-white rounded-2xl border overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 flex flex-col ${soldOut ? 'border-red-100 opacity-90' : 'border-stone-100'}`}>
         <div className="h-44 bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center relative overflow-hidden shrink-0">
           {p.imageBase64 ? <img src={p.imageBase64} alt={p.name} className="w-full h-full object-cover" /> : <span className="text-6xl">{EMOJI[p.category] || '🍽️'}</span>}
           <span className="absolute top-2 left-2 bg-amber-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{p.category}{p.subCategory ? ` · ${p.subCategory}` : ''}</span>
           {p.isFeatured && <span className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5"><Star className="w-3 h-3 fill-current" />明星</span>}
-          {soldOut && <div className="absolute inset-0 bg-stone-900/50 flex items-center justify-center text-white font-bold">已售完</div>}
+          {soldOut && <div className="absolute inset-0 bg-stone-900/55 flex items-center justify-center"><span className="bg-red-600 text-white font-bold text-sm px-4 py-2 rounded-full">目前缺貨中</span></div>}
         </div>
         <div className="p-4 flex flex-col flex-1">
           <div className="flex justify-between items-start mb-1">
@@ -93,20 +97,32 @@ export default function Storefront() {
             <span className="font-black text-amber-600 text-xl">${p.price}</span>
           </div>
           <p className="text-xs text-stone-500 mb-2 line-clamp-2 flex-1">{p.description}</p>
-          <p className="text-[10px] text-stone-400 mb-3">{texts.stockLabel} {p.stock} · {texts.soldLabel} {salesMap[p.id] || 0}{inCart > 0 ? ` · 購物車 ${inCart}` : ''}</p>
+          <p className="text-[10px] mb-3">
+            {soldOut ? (
+              <span className="text-red-600 font-bold">目前缺貨中</span>
+            ) : (
+              <span className="text-stone-400">{texts.stockLabel} {p.stock} · {texts.soldLabel} {salesMap[p.id] || 0}{inCart > 0 ? ` · 購物車 ${inCart}` : ''}</span>
+            )}
+          </p>
 
           <div className="space-y-2 mt-auto">
+            {!soldOut && (
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-600">{texts.quantityLabel}</span>
               <div className="flex items-center gap-1 bg-stone-100 rounded-xl p-1">
                 <button type="button" onClick={() => setPickQty(p.id, Math.max(1, pickQty - 1))} className="w-9 h-9 flex items-center justify-center bg-white rounded-lg"><Minus className="w-4 h-4" /></button>
                 <span className="w-8 text-center font-black text-sm">{pickQty}</span>
-                <button type="button" disabled={pickQty >= maxPick || soldOut} onClick={() => setPickQty(p.id, pickQty + 1)} className="w-9 h-9 flex items-center justify-center bg-white rounded-lg disabled:opacity-30"><Plus className="w-4 h-4" /></button>
+                <button type="button" disabled={pickQty >= maxPick} onClick={() => setPickQty(p.id, pickQty + 1)} className="w-9 h-9 flex items-center justify-center bg-white rounded-lg disabled:opacity-30"><Plus className="w-4 h-4" /></button>
               </div>
             </div>
+            )}
             <button type="button" onClick={() => confirmAdd(p)} disabled={soldOut || maxPick <= 0}
-              className="w-full py-2.5 rounded-xl text-sm font-bold bg-stone-900 hover:bg-amber-600 text-white disabled:bg-stone-200 disabled:text-stone-400 flex items-center justify-center gap-1 transition-colors">
-              <Plus className="w-4 h-4" />{texts.addToCartBtn}
+              className={`w-full py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-1 transition-colors ${
+                soldOut || maxPick <= 0
+                  ? 'bg-red-50 text-red-600 border border-red-200 cursor-not-allowed'
+                  : 'bg-stone-900 hover:bg-amber-600 text-white'
+              }`}>
+              {soldOut || maxPick <= 0 ? '目前缺貨中' : <><Plus className="w-4 h-4" />{texts.addToCartBtn}</>}
             </button>
           </div>
         </div>

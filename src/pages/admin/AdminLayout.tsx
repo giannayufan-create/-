@@ -34,7 +34,7 @@ export default function AdminLayout() {
 
   return (
     <div className="flex-1 flex min-h-0">
-      <aside className="hidden lg:flex w-60 bg-stone-900 text-white flex-col shrink-0">
+      <aside className="hidden lg:flex w-60 bg-stone-900 text-white flex-col shrink-0 overflow-visible">
         <div className="p-5 border-b border-stone-700 flex items-center justify-between">
           <div>
             <p className="text-xs text-stone-400 font-medium">管理後台</p>

@@ -81,10 +81,10 @@ export default function Cart() {
         createdAt: now,
       };
 
-      const result = await notifyOrderPlaced(order);
+      await notifyOrderPlaced(order);
       clearCart();
-      setSuccess(result.message);
-      setTimeout(() => navigate('/orders'), 1500);
+      setSuccess('done');
+      setTimeout(() => navigate('/orders'), 2500);
     } catch (e: any) {
       setError(e.message || '結帳失敗，請稍後再試');
     } finally {
@@ -113,8 +113,12 @@ export default function Cart() {
         </div>
       )}
       {success && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-xl mb-4 flex items-start gap-2 text-sm">
-          <CheckCircle className="w-5 h-5 shrink-0" />{success}
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-5 rounded-xl mb-4 flex items-start gap-3">
+          <CheckCircle className="w-6 h-6 shrink-0 text-emerald-600" />
+          <div>
+            <p className="font-black text-base">{texts.checkoutSuccessTitle}</p>
+            <p className="text-sm mt-1.5 text-emerald-700">{texts.checkoutSuccessContact}</p>
+          </div>
         </div>
       )}
 
@@ -124,17 +128,19 @@ export default function Cart() {
             {cart.map((item) => {
               const stock = products.find((p) => p.id === item.productId)?.stock ?? 999;
               const over = item.quantity > stock;
+              const soldOut = stock <= 0;
               return (
-                <div key={item.productId} className={`p-4 flex items-center gap-4 ${over ? 'bg-red-50/50' : ''}`}>
+                <div key={item.productId} className={`p-4 flex items-center gap-4 ${over || soldOut ? 'bg-red-50/50' : ''}`}>
                   <div className="flex-1">
                     <p className="font-bold text-stone-800">{item.name}</p>
                     <p className="text-xs text-stone-500">${item.price} / 份</p>
-                    {over && <p className="text-xs text-red-600 font-bold mt-1">庫存僅剩 {stock} 份</p>}
+                    {soldOut && <p className="text-xs text-red-600 font-bold mt-1">目前缺貨中</p>}
+                    {!soldOut && over && <p className="text-xs text-red-600 font-bold mt-1">庫存僅剩 {stock} 份</p>}
                   </div>
                   <div className="flex items-center gap-1 bg-stone-100 rounded-xl p-1">
                     <button onClick={() => updateQuantity(item.productId, Math.max(1, item.quantity - 1))} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white"><Minus className="w-3.5 h-3.5" /></button>
                     <span className="w-6 text-center font-bold text-sm">{item.quantity}</span>
-                    <button disabled={item.quantity >= stock} onClick={() => updateQuantity(item.productId, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white disabled:opacity-30"><Plus className="w-3.5 h-3.5" /></button>
+                    <button disabled={soldOut || item.quantity >= stock} onClick={() => updateQuantity(item.productId, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white disabled:opacity-30"><Plus className="w-3.5 h-3.5" /></button>
                   </div>
                   <p className="font-bold text-stone-800 w-16 text-right">${(item.price * item.quantity).toFixed(0)}</p>
                   <button onClick={() => removeFromCart(item.productId)} className="text-stone-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>

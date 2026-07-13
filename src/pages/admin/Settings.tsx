@@ -4,7 +4,8 @@ import { db } from '../../lib/firebase';
 import { mergeSettings, setSettingsCache } from '../../lib/useSettings';
 import { getSettingsSnapshot } from '../../lib/settingsCache';
 import { PAGE_TEXT_FIELDS } from '../../lib/pageTexts';
-import { Check, Loader2, Mail, ChevronUp, ChevronDown, Plus, Trash2, Image, X, Type, ExternalLink, Music } from 'lucide-react';
+import { Check, Loader2, Mail, ChevronUp, ChevronDown, Plus, Trash2, Image, X, Type, ExternalLink, Music, Send } from 'lucide-react';
+import { testOrderEmail } from '../../lib/orderNotify';
 import { CarouselSlide } from '../../types';
 
 export default function AdminSettings() {
@@ -12,6 +13,8 @@ export default function AdminSettings() {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [newSubCat, setNewSubCat] = useState<Record<string, string>>({});
+  const [testingEmail, setTestingEmail] = useState(false);
+  const [emailTestResult, setEmailTestResult] = useState('');
 
   useEffect(() => {
     setSettings(getSettingsSnapshot());
@@ -24,6 +27,24 @@ export default function AdminSettings() {
     setLoading(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
+  };
+
+  const sendTestEmail = async () => {
+    const key = settings.web3formsAccessKey?.trim();
+    if (!key) {
+      setEmailTestResult('請先填入 Web3Forms 金鑰');
+      return;
+    }
+    setTestingEmail(true);
+    setEmailTestResult('');
+    try {
+      await testOrderEmail(key, settings.adminEmail || 'ko520940@gmail.com', settings.storeName || '滷味小哥');
+      setEmailTestResult(`測試信已寄出！請檢查申請金鑰時使用的信箱（建議 ${settings.adminEmail || 'ko520940@gmail.com'}），含垃圾郵件匣。`);
+    } catch (e: any) {
+      setEmailTestResult(`發送失敗：${e?.message || '未知錯誤'}。請確認金鑰正確，且已在 web3forms.com 點擊啟用信。`);
+    } finally {
+      setTestingEmail(false);
+    }
   };
 
   const moveCategory = (idx: number, dir: -1 | 1) => {
@@ -216,8 +237,18 @@ export default function AdminSettings() {
             placeholder="到 web3forms.com 免費申請 Access Key"
             className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-sm font-mono focus:ring-2 focus:ring-amber-400 focus:outline-none" />
           <p className="text-[11px] text-stone-400 mt-1.5">
-            申請步驟：前往 <a href="https://web3forms.com" target="_blank" rel="noreferrer" className="text-amber-600 underline">web3forms.com</a> → 輸入商家 Email → 取得 Access Key → 貼到上方 → 儲存設定
+            申請步驟：前往 <a href="https://web3forms.com" target="_blank" rel="noreferrer" className="text-amber-600 underline">web3forms.com</a> → 輸入商家 Email → 取得 Access Key → <strong>到信箱點擊啟用連結</strong> → 貼到上方 → 儲存設定
           </p>
+          <p className="text-[11px] text-amber-700 mt-1">
+            免費版只會寄信到「申請金鑰時填的 Email」，不會另外寄給客戶。客戶可在「我的訂單」查看。
+          </p>
+          <button type="button" onClick={sendTestEmail} disabled={testingEmail}
+            className="mt-3 inline-flex items-center gap-2 bg-stone-800 hover:bg-stone-900 text-white text-xs font-bold px-4 py-2 rounded-lg disabled:opacity-50">
+            {testingEmail ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />寄送中...</> : <><Send className="w-3.5 h-3.5" />寄送測試信</>}
+          </button>
+          {emailTestResult && (
+            <p className={`text-xs mt-2 font-medium ${emailTestResult.startsWith('發送失敗') ? 'text-red-600' : 'text-emerald-700'}`}>{emailTestResult}</p>
+          )}
         </div>
 
         <div>

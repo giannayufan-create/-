@@ -20,6 +20,8 @@ export interface PageTexts {
   deliveryTimeLabel: string;
   checkoutBtn: string;
   checkoutNote: string;
+  checkoutSuccessTitle: string;
+  checkoutSuccessContact: string;
   ordersTitle: string;
   ordersEmpty: string;
   footerContact: string;
@@ -54,7 +56,9 @@ export const DEFAULT_PAGE_TEXTS: PageTexts = {
   deliveryDateLabel: '配送日期',
   deliveryTimeLabel: '配送時段',
   checkoutBtn: '確認結帳',
-  checkoutNote: '結帳後將寄送 Email 通知給您與商家',
+  checkoutNote: '訂單已通知商家',
+  checkoutSuccessTitle: '訂單已完成等待配送',
+  checkoutSuccessContact: '有任何問題 請聯絡 滷味小哥路人甲',
   ordersTitle: '我的訂單',
   ordersEmpty: '尚無訂單紀錄',
   footerContact: '聯絡我們',
@@ -93,6 +97,8 @@ export const PAGE_TEXT_FIELDS: { key: keyof PageTexts; label: string; group: str
   { key: 'deliveryTimeLabel', label: '配送時段', group: '購物車' },
   { key: 'checkoutBtn', label: '確認結帳按鈕', group: '購物車' },
   { key: 'checkoutNote', label: '結帳說明', group: '購物車' },
+  { key: 'checkoutSuccessTitle', label: '結帳成功標題', group: '購物車' },
+  { key: 'checkoutSuccessContact', label: '結帳成功聯絡說明', group: '購物車' },
   { key: 'ordersTitle', label: '我的訂單標題', group: '訂單頁' },
   { key: 'ordersEmpty', label: '無訂單提示', group: '訂單頁' },
   { key: 'footerContact', label: '頁尾－聯絡我們', group: '頁尾' },
