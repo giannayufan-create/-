@@ -120,7 +120,7 @@ export default function Storefront() {
             {soldOut ? (
               <span className="text-[#b5452c] font-bold">目前缺貨中</span>
             ) : (
-              <span className="text-[#9a8674]">{texts.stockLabel} {p.stock} · {texts.soldLabel} {salesMap[p.id] || 0}{inCart > 0 ? ` · 購物車 ${inCart}` : ''}</span>
+              <span className="text-[#9a8674]">{texts.stockLabel} {p.stock}{inCart > 0 ? ` · 購物車 ${inCart}` : ''}</span>
             )}
           </p>
 
