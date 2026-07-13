@@ -76,36 +76,42 @@ export default function Layout({ adminMode }: LayoutProps) {
   );
 
   if (adminMode) {
-    return <div className="min-h-screen bg-stone-50 flex flex-col font-sans">{shell}</div>;
+    return <div className="min-h-screen admin-atmosphere flex flex-col font-sans">{shell}</div>;
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col font-sans" style={{ fontSize: `${scale}rem` }}>
+    <div className="min-h-screen site-atmosphere flex flex-col font-sans" style={{ fontSize: `${scale}rem` }}>
       <AuthLoadingOverlay />
       <AuthModal />
       <ProfileSetup />
 
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-stone-200">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-gradient-to-br from-amber-500 to-red-600 rounded-xl flex items-center justify-center text-lg">🍲</div>
+      <header className="sticky top-0 z-40 bg-[#faf6f1]/85 backdrop-blur-md border-b border-[#e8d9c8]/80">
+        <div className="max-w-6xl mx-auto px-4 h-[4.25rem] flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="brand-mark w-10 h-10 rounded-xl flex items-center justify-center text-white font-display text-sm font-bold tracking-wider">
+              滷
+            </div>
             <div>
-              <p className="font-black text-stone-900 text-sm leading-tight">{settings.storeName}</p>
-              <p className="text-[10px] text-amber-600 font-bold">{texts.headerSubtitle}</p>
+              <p className="font-display font-bold text-[var(--color-ink)] text-base leading-tight tracking-wide group-hover:text-[var(--color-copper)] transition-colors">
+                {settings.storeName}
+              </p>
+              <p className="text-[10px] text-[var(--color-copper)] font-medium tracking-[0.2em] mt-0.5">
+                {texts.headerSubtitle}
+              </p>
             </div>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-6">
-            <Link to="/" className="text-sm font-bold text-stone-600 hover:text-amber-600 transition-colors">{texts.navMenu}</Link>
-            {user && userRole !== 'admin' && <Link to="/orders" className="text-sm font-bold text-stone-600 hover:text-amber-600 transition-colors">{texts.navOrders}</Link>}
-            {user && userRole === 'admin' && <Link to="/admin" className="text-sm font-bold text-stone-600 hover:text-amber-600 transition-colors">{texts.navAdmin}</Link>}
+          <nav className="hidden md:flex items-center gap-8">
+            <Link to="/" className="text-sm font-medium text-[#5c4a3d] hover:text-[var(--color-copper)] transition-colors">{texts.navMenu}</Link>
+            {user && userRole !== 'admin' && <Link to="/orders" className="text-sm font-medium text-[#5c4a3d] hover:text-[var(--color-copper)] transition-colors">{texts.navOrders}</Link>}
+            {user && userRole === 'admin' && <Link to="/admin" className="text-sm font-medium text-[#5c4a3d] hover:text-[var(--color-copper)] transition-colors">{texts.navAdmin}</Link>}
           </nav>
 
-          <div className="flex items-center gap-3">
-            <Link to="/cart" className={`relative p-2 rounded-lg transition-colors ${cartPulse ? 'text-amber-600 bg-amber-50' : 'text-stone-500 hover:text-amber-600'}`}>
+          <div className="flex items-center gap-2.5">
+            <Link to="/cart" className={`relative p-2.5 rounded-xl transition-colors ${cartPulse ? 'text-[var(--color-copper)] bg-[#f3e2d0]' : 'text-[#6b5648] hover:text-[var(--color-copper)] hover:bg-[#f3e8dc]'}`}>
               <ShoppingCart className="w-5 h-5" />
               {totalItems > 0 && (
-                <span className={`absolute -top-0.5 -right-0.5 bg-amber-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center min-w-[18px] min-h-[18px] transition-transform ${cartPulse ? 'scale-110 ring-2 ring-amber-300' : ''}`}>
+                <span className={`absolute -top-0.5 -right-0.5 bg-[var(--color-copper)] text-white text-[9px] font-bold rounded-md flex items-center justify-center min-w-[18px] min-h-[18px] transition-transform ${cartPulse ? 'scale-110' : ''}`}>
                   {totalItems}
                 </span>
               )}
@@ -113,27 +119,27 @@ export default function Layout({ adminMode }: LayoutProps) {
 
             {user ? (
               <div className="relative">
-                <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2 bg-stone-100 hover:bg-stone-200 px-3 py-1.5 rounded-xl transition-colors">
-                  <User className="w-4 h-4 text-stone-600" />
-                  <span className="text-xs font-bold text-stone-700 hidden sm:inline max-w-[80px] truncate">
+                <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2 bg-[#f0e6da] hover:bg-[#e8d9c8] px-3 py-2 rounded-xl transition-colors">
+                  <User className="w-4 h-4 text-[#6b5648]" />
+                  <span className="text-xs font-bold text-[#3d2e24] hidden sm:inline max-w-[80px] truncate">
                     {user.displayName || user.email?.split('@')[0]}
                   </span>
                 </button>
                 {menuOpen && (
-                  <div className="absolute right-0 top-11 w-48 bg-white border border-stone-200 rounded-xl shadow-lg py-1 z-50">
-                    <button onClick={() => { setProfileModalOpen(true); setMenuOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-stone-50">修改資料</button>
+                  <div className="absolute right-0 top-12 w-48 surface-warm rounded-2xl shadow-[0_16px_40px_-20px_rgba(28,20,16,0.35)] py-1.5 z-50">
+                    <button onClick={() => { setProfileModalOpen(true); setMenuOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-[#f6efe6]">修改資料</button>
                     {userRole === 'admin' ? (
-                      <Link to="/admin" onClick={() => setMenuOpen(false)} className="block px-4 py-2.5 text-sm hover:bg-stone-50 flex items-center gap-2"><LayoutDashboard className="w-4 h-4" />管理後台</Link>
+                      <Link to="/admin" onClick={() => setMenuOpen(false)} className="block px-4 py-2.5 text-sm hover:bg-[#f6efe6] flex items-center gap-2"><LayoutDashboard className="w-4 h-4" />管理後台</Link>
                     ) : (
-                      <Link to="/orders" onClick={() => setMenuOpen(false)} className="block px-4 py-2.5 text-sm hover:bg-stone-50 flex items-center gap-2"><Package className="w-4 h-4" />我的訂單</Link>
+                      <Link to="/orders" onClick={() => setMenuOpen(false)} className="block px-4 py-2.5 text-sm hover:bg-[#f6efe6] flex items-center gap-2"><Package className="w-4 h-4" />我的訂單</Link>
                     )}
-                    <hr className="my-1 border-stone-100" />
-                    <button onClick={() => { handleLogout(); setMenuOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"><LogOut className="w-4 h-4" />登出</button>
+                    <hr className="my-1 border-[#eadfce]" />
+                    <button onClick={() => { handleLogout(); setMenuOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-[#b5452c] hover:bg-[#fdf2ef] flex items-center gap-2"><LogOut className="w-4 h-4" />登出</button>
                   </div>
                 )}
               </div>
             ) : (
-              <button onClick={() => setAuthModalOpen(true)} className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors">
+              <button onClick={() => setAuthModalOpen(true)} className="btn-copper text-sm font-bold px-4 py-2 rounded-xl">
                 {texts.navLogin}
               </button>
             )}
@@ -141,7 +147,7 @@ export default function Layout({ adminMode }: LayoutProps) {
         </div>
       </header>
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6 pb-24 md:pb-8 flex flex-col">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6 pb-24 md:pb-10 flex flex-col">
         <Outlet />
       </main>
 
@@ -149,7 +155,7 @@ export default function Layout({ adminMode }: LayoutProps) {
 
       {!adminMode && <BackgroundMusic />}
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 flex z-40">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#faf6f1]/95 backdrop-blur-md border-t border-[#e8d9c8] flex z-40">
         {[
           { to: '/', icon: Store, label: texts.navMenu },
           { to: '/cart', icon: ShoppingCart, label: texts.navCart, badge: totalItems },
@@ -157,15 +163,15 @@ export default function Layout({ adminMode }: LayoutProps) {
           { action: () => user ? setMenuOpen(true) : setAuthModalOpen(true), icon: User, label: user ? texts.navMember : texts.navLogin },
         ].map((item, i) => (
           item.to ? (
-            <Link key={i} to={item.to} className={`flex-1 flex flex-col items-center justify-center py-2 text-stone-500 hover:text-amber-600 relative ${item.to === '/cart' && cartPulse ? 'text-amber-600' : ''}`}>
+            <Link key={i} to={item.to} className={`flex-1 flex flex-col items-center justify-center py-2.5 text-[#6b5648] hover:text-[var(--color-copper)] relative ${item.to === '/cart' && cartPulse ? 'text-[var(--color-copper)]' : ''}`}>
               <item.icon className="w-5 h-5" />
               <span className="text-[10px] font-bold mt-0.5">{item.label}</span>
               {'badge' in item && item.badge! > 0 && (
-                <span className="absolute top-1 right-1/4 bg-amber-600 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{item.badge}</span>
+                <span className="absolute top-1 right-1/4 bg-[var(--color-copper)] text-white text-[8px] font-bold w-4 h-4 rounded-md flex items-center justify-center">{item.badge}</span>
               )}
             </Link>
           ) : (
-            <button key={i} onClick={item.action} className="flex-1 flex flex-col items-center justify-center py-2 text-stone-500 hover:text-amber-600">
+            <button key={i} onClick={item.action} className="flex-1 flex flex-col items-center justify-center py-2.5 text-[#6b5648] hover:text-[var(--color-copper)]">
               <item.icon className="w-5 h-5" />
               <span className="text-[10px] font-bold mt-0.5">{item.label}</span>
             </button>

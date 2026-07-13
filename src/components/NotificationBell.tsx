@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 export default function NotificationBell({ dark = true }: { dark?: boolean }) {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
-  const [panelPos, setPanelPos] = useState({ top: 0, left: 0, width: 320 });
+  const [panelPos, setPanelPos] = useState({ top: 0, left: 0, width: 340, maxH: 360 });
   const btnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -23,10 +23,17 @@ export default function NotificationBell({ dark = true }: { dark?: boolean }) {
     if (!open || !btnRef.current) return;
     const update = () => {
       const r = btnRef.current!.getBoundingClientRect();
-      const width = Math.min(320, window.innerWidth - 16);
-      let left = r.right - width;
-      left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
-      setPanelPos({ top: r.bottom + 8, left, width });
+      const margin = 12;
+      const width = Math.min(340, window.innerWidth - margin * 2);
+      const openToRight = r.left < window.innerWidth * 0.45;
+      let left = openToRight ? r.right + 8 : r.right - width;
+      left = Math.max(margin, Math.min(left, window.innerWidth - width - margin));
+      let top = r.bottom + 8;
+      const maxH = Math.min(360, window.innerHeight - top - margin);
+      if (top + 120 > window.innerHeight) {
+        top = Math.max(margin, r.top - maxH - 8);
+      }
+      setPanelPos({ top, left, width, maxH });
     };
     update();
     window.addEventListener('resize', update);
@@ -51,25 +58,25 @@ export default function NotificationBell({ dark = true }: { dark?: boolean }) {
     <>
       <div className="fixed inset-0 z-[200]" onClick={() => setOpen(false)} />
       <div
-        className="fixed z-[201] bg-white rounded-2xl shadow-xl border border-stone-200 overflow-hidden"
+        className="fixed z-[201] bg-[#fffcf8] rounded-2xl shadow-[0_20px_50px_-20px_rgba(28,20,16,0.4)] border border-[#eadfce] overflow-hidden"
         style={{ top: panelPos.top, left: panelPos.left, width: panelPos.width }}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-stone-100 bg-stone-50">
-          <p className="font-bold text-stone-800 text-sm">訂單通知</p>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#eadfce] bg-[#f6efe6]">
+          <p className="font-display font-bold text-[var(--color-ink)] text-sm">訂單通知</p>
           {unread > 0 && (
-            <button onClick={markAllRead} className="text-xs text-amber-600 font-bold hover:underline">全部已讀</button>
+            <button onClick={markAllRead} className="text-xs text-[var(--color-copper)] font-bold hover:underline">全部已讀</button>
           )}
         </div>
-        <div className="max-h-72 overflow-y-auto">
+        <div className="overflow-y-auto" style={{ maxHeight: panelPos.maxH }}>
           {notifications.length === 0 ? (
-            <p className="text-center text-stone-400 text-sm py-8">尚無通知</p>
+            <p className="text-center text-[#9a8674] text-sm py-8">尚無通知</p>
           ) : (
             notifications.map((n) => (
               <button key={n.id} onClick={() => markRead(n.id)}
-                className={`w-full text-left px-4 py-3 border-b border-stone-50 hover:bg-stone-50 ${!n.read ? 'bg-amber-50/50' : ''}`}>
-                <p className="text-sm font-bold text-stone-800">{n.title}</p>
-                <p className="text-xs text-stone-500 mt-0.5 line-clamp-2 whitespace-pre-line">{n.body?.split('\n').slice(0, 3).join('\n')}</p>
-                <p className="text-[10px] text-stone-400 mt-1">{n.createdAt ? format(new Date(n.createdAt), 'MM/dd HH:mm') : ''}</p>
+                className={`w-full text-left px-4 py-3 border-b border-[#f0e6da] hover:bg-[#faf6f1] ${!n.read ? 'bg-[#f8efe4]' : ''}`}>
+                <p className="text-sm font-bold text-[var(--color-ink)]">{n.title}</p>
+                <p className="text-xs text-[#7a6555] mt-0.5 line-clamp-2 whitespace-pre-line">{n.body?.split('\n').slice(0, 3).join('\n')}</p>
+                <p className="text-[10px] text-[#9a8674] mt-1">{n.createdAt ? format(new Date(n.createdAt), 'MM/dd HH:mm') : ''}</p>
               </button>
             ))
           )}

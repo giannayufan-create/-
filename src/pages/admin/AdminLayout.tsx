@@ -23,11 +23,10 @@ export default function AdminLayout() {
   if (userRole !== 'admin') {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
-        <div className="bg-white rounded-2xl border border-stone-200 p-10 text-center max-w-sm">
-          <div className="text-4xl mb-3">🔒</div>
-          <h2 className="text-xl font-black text-stone-800 mb-2">權限不足</h2>
-          <p className="text-sm text-stone-500 mb-4">此頁面僅限管理員使用</p>
-          <button onClick={() => navigate('/')} className="bg-amber-600 text-white px-6 py-2 rounded-xl font-bold text-sm">返回首頁</button>
+        <div className="surface-warm rounded-2xl p-10 text-center max-w-sm">
+          <h2 className="font-display text-xl font-bold text-[var(--color-ink)] mb-2">權限不足</h2>
+          <p className="text-sm text-[#7a6555] mb-4">此頁面僅限管理員使用</p>
+          <button onClick={() => navigate('/')} className="btn-copper px-6 py-2 rounded-xl font-bold text-sm">返回首頁</button>
         </div>
       </div>
     );
@@ -35,11 +34,11 @@ export default function AdminLayout() {
 
   return (
     <div className="flex-1 flex min-h-0">
-      <aside className="hidden lg:flex w-60 bg-stone-900 text-white flex-col shrink-0 overflow-visible">
-        <div className="p-5 border-b border-stone-700 flex items-center justify-between">
+      <aside className="hidden lg:flex w-60 bg-[linear-gradient(180deg,#2a211c_0%,#1c1410_100%)] text-[#d9c8b6] flex-col shrink-0 overflow-visible">
+        <div className="p-5 border-b border-white/10 flex items-center justify-between">
           <div>
-            <p className="text-xs text-stone-400 font-medium">管理後台</p>
-            <h2 className="font-black text-lg mt-0.5">滷味小哥</h2>
+            <p className="text-[10px] text-[#9a8674] font-medium tracking-[0.2em]">管理後台</p>
+            <h2 className="font-display font-bold text-lg mt-1 text-white tracking-wide">滷味小哥</h2>
           </div>
           <NotificationBell dark />
         </div>
@@ -48,33 +47,33 @@ export default function AdminLayout() {
             <NavLink key={to} to={to} end={end}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                  isActive ? 'bg-amber-600 text-white' : 'text-stone-300 hover:bg-stone-800 hover:text-white'
+                  isActive ? 'bg-[var(--color-copper)] text-white' : 'text-[#cbb9a5] hover:bg-white/5 hover:text-white'
                 }`
               }>
               <Icon className="w-4 h-4" />{label}
             </NavLink>
           ))}
         </nav>
-        <div className="p-3 border-t border-stone-700 space-y-1">
-          <button onClick={() => navigate('/')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-stone-300 hover:bg-stone-800">
+        <div className="p-3 border-t border-white/10 space-y-1">
+          <button onClick={() => navigate('/')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-[#cbb9a5] hover:bg-white/5 hover:text-white">
             <ArrowLeft className="w-4 h-4" />回到前台
           </button>
-          <button onClick={() => logout().then(() => navigate('/'))} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-400 hover:bg-stone-800">
+          <button onClick={() => logout().then(() => navigate('/'))} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-[#e8a090] hover:bg-white/5">
             <LogOut className="w-4 h-4" />登出
           </button>
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0 bg-stone-50">
-        <div className="lg:hidden flex items-center justify-between p-3 bg-white border-b border-stone-200">
-          <p className="font-black text-stone-800 text-sm">管理後台</p>
+      <div className="flex-1 flex flex-col min-w-0">
+        <div className="lg:hidden flex items-center justify-between p-3 bg-[#faf6f1]/90 border-b border-[#e8d9c8]">
+          <p className="font-display font-bold text-[var(--color-ink)] text-sm">管理後台</p>
           <NotificationBell dark={false} />
         </div>
-        <div className="lg:hidden flex overflow-x-auto gap-1 px-3 pb-3 bg-white border-b border-stone-200">
+        <div className="lg:hidden flex overflow-x-auto gap-1 px-3 pb-3 bg-[#faf6f1]/90 border-b border-[#e8d9c8]">
           {NAV.map(({ to, label, end }) => (
             <NavLink key={to} to={to} end={end}
               className={({ isActive }) =>
-                `whitespace-nowrap px-4 py-2 rounded-lg text-xs font-bold ${isActive ? 'bg-amber-600 text-white' : 'bg-stone-100 text-stone-600'}`
+                `whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold ${isActive ? 'bg-[var(--color-copper)] text-white' : 'bg-white/80 text-[#6b5648]'}`
               }>{label}</NavLink>
           ))}
         </div>

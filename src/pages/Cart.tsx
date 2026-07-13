@@ -105,19 +105,19 @@ export default function Cart() {
 
   return (
     <div className="max-w-2xl mx-auto w-full">
-      <h1 className="text-2xl font-black text-stone-900 mb-6">{texts.cartTitle}</h1>
+      <h1 className="font-display text-2xl font-bold text-[var(--color-ink)] mb-6 tracking-wide">{texts.cartTitle}</h1>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl mb-4 flex items-start gap-2 text-sm">
+        <div className="bg-[#fdf2ef] border border-[#f0d5ce] text-[#b5452c] p-4 rounded-xl mb-4 flex items-start gap-2 text-sm">
           <AlertCircle className="w-5 h-5 shrink-0" />{error}
         </div>
       )}
       {success && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-5 rounded-xl mb-4 flex items-start gap-3">
-          <CheckCircle className="w-6 h-6 shrink-0 text-emerald-600" />
+        <div className="bg-[#eef6ef] border border-[#cfe3d1] text-[#2f6b3a] p-5 rounded-xl mb-4 flex items-start gap-3 fade-up">
+          <CheckCircle className="w-6 h-6 shrink-0 text-[#3d8b4a]" />
           <div>
-            <p className="font-black text-base">{texts.checkoutSuccessTitle}</p>
-            <p className="text-sm mt-1.5 text-emerald-700">{texts.checkoutSuccessContact}</p>
+            <p className="font-display font-bold text-base">{texts.checkoutSuccessTitle}</p>
+            <p className="text-sm mt-1.5 text-[#3d6b45]">{texts.checkoutSuccessContact}</p>
           </div>
         </div>
       )}
@@ -181,14 +181,14 @@ export default function Cart() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-stone-200 p-5">
+          <div className="surface-warm rounded-2xl p-5">
             <div className="flex justify-between items-center mb-4">
-              <span className="font-bold text-stone-600">總計</span>
-              <span className="text-3xl font-black text-amber-600">${cartTotal.toFixed(0)}</span>
+              <span className="font-bold text-[#6b5648]">總計</span>
+              <span className="font-display text-3xl font-bold text-[var(--color-copper)]">${cartTotal.toFixed(0)}</span>
             </div>
-            <p className="text-xs text-stone-400 mb-4">{texts.checkoutNote}</p>
+            <p className="text-xs text-[#9a8674] mb-4">{texts.checkoutNote}</p>
             <button onClick={checkout} disabled={checking || oversold || !deliveryDate || !deliveryTime}
-              className="w-full bg-stone-900 hover:bg-amber-600 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 disabled:opacity-40 transition-colors">
+              className="w-full btn-ink font-bold py-4 rounded-xl flex items-center justify-center gap-2 disabled:opacity-40">
               {checking ? <><Loader2 className="w-5 h-5 animate-spin" />處理中...</> : <><span>{texts.checkoutBtn}</span><ArrowRight className="w-5 h-5" /></>}
             </button>
           </div>
