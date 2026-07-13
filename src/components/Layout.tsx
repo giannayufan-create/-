@@ -3,7 +3,7 @@ import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { initAuth, googleSignIn, facebookSignIn, yahooSignIn, loginWithEmail, registerWithEmail, logout, db, resetPassword } from '../lib/firebase';
 import { useStore } from '../lib/store';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { ShoppingCart, LayoutDashboard, User as UserIcon, LogOut, Package, Store, Mail, X, Eye, EyeOff } from 'lucide-react';
+import { ShoppingCart, LayoutDashboard, User as UserIcon, LogOut, Package, Store, Mail, X, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 export default function Layout() {
   const { user, userRole, userData, setUser, cart, isAuthLoading, setAuthLoading, isAuthModalOpen, setAuthModalOpen, isProfileModalOpen, setProfileModalOpen } = useStore();
@@ -189,6 +189,7 @@ export default function Layout() {
 
   const [setupData, setSetupData] = useState({ name: '', phone: '', billingAddress: '', shippingAddress: '' });
   const [isSubmittingSetup, setIsSubmittingSetup] = useState(false);
+  const [setupError, setSetupError] = useState('');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -218,14 +219,42 @@ export default function Layout() {
   const handleProfileSetup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    setSetupError('');
+
+    // 1. Name validation
+    const trimmedName = setupData.name.trim();
+    if (trimmedName.length < 2) {
+      setSetupError('⚠️ 姓名或店名長度不足（最少需填寫 2 個字）');
+      return;
+    }
+
+    // 2. Taiwanese phone regex validation (supports 09xxxxxxxx, 02xxxxxxxx, etc.)
+    const phoneRegex = /^09\d{8}$|^0\d{1,2}-?\d{6,8}$/;
+    if (!phoneRegex.test(setupData.phone.trim())) {
+      setSetupError('⚠️ 請輸入正確的聯絡電話格式（例如：0912345678 或 02-12345678）');
+      return;
+    }
+
+    // 3. Billing address validation
+    if (setupData.billingAddress.trim().length < 5) {
+      setSetupError('⚠️ 通訊地址太過簡短，請輸入完整地址以供確認（最少 5 個字）');
+      return;
+    }
+
+    // 4. Shipping address validation
+    if (setupData.shippingAddress.trim().length < 5) {
+      setSetupError('⚠️ 送貨地址太過簡短，請輸入完整地址以利物流配送（最少 5 個字）');
+      return;
+    }
+
     setIsSubmittingSetup(true);
     try {
       const userRef = doc(db, 'users', user.uid);
       const updates = {
-        name: setupData.name,
-        phone: setupData.phone,
-        billingAddress: setupData.billingAddress,
-        shippingAddress: setupData.shippingAddress,
+        name: trimmedName,
+        phone: setupData.phone.trim(),
+        billingAddress: setupData.billingAddress.trim(),
+        shippingAddress: setupData.shippingAddress.trim(),
         isProfileComplete: true,
         updatedAt: new Date().toISOString()
       };
@@ -240,7 +269,7 @@ export default function Layout() {
       setTimeout(() => setShowToast(false), 3000);
     } catch (error: any) {
       console.error('Setup error:', error);
-      alert('儲存失敗: ' + (error.message || '未知錯誤'));
+      setSetupError('儲存失敗: ' + (error.message || '未知錯誤'));
     } finally {
       setIsSubmittingSetup(false);
     }
@@ -388,6 +417,12 @@ export default function Layout() {
             <h2 className="text-2xl font-bold text-slate-800 mb-2">{isProfileModalOpen ? '修改基本資料' : '歡迎來到 滷味小哥路人甲!'}</h2>
             <p className="text-slate-500 mb-6 text-sm">{isProfileModalOpen ? '請更新您的個人或店家資料。' : '請完成您的個人或店家資料以開始使用。'}</p>
             <form onSubmit={handleProfileSetup} className="space-y-4">
+              {setupError && (
+                <div className="bg-rose-50 border border-rose-100 text-rose-700 text-xs font-bold p-3 rounded-xl flex items-start gap-2.5 animate-in fade-in duration-200">
+                  <AlertCircle className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
+                  <span>{setupError}</span>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1">姓名或店名</label>
                 <input required type="text" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 focus:outline-none" value={setupData.name} onChange={e => setSetupData({...setupData, name: e.target.value})} placeholder="輸入姓名或店名" />

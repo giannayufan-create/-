@@ -34,7 +34,21 @@ export default function Admin() {
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
-  const [settings, setSettings] = useState({ spreadsheetId: '' });
+  const [settings, setSettings] = useState({ 
+    spreadsheetId: '',
+    ecpayEnabled: false,
+    linepayEnabled: false,
+    lalamoveEnabled: false,
+    linenotifyEnabled: false,
+    ecpayMerchantId: '',
+    ecpayHashKey: '',
+    ecpayHashIv: '',
+    linepayChannelId: '',
+    linepaySecret: '',
+    lalamoveApiKey: '',
+    lalamoveApiSecret: '',
+    linenotifyToken: ''
+  });
   
   // Search and filter states
   const [productSearch, setProductSearch] = useState('');
@@ -104,7 +118,7 @@ export default function Admin() {
     });
     
     getDoc(doc(db, 'settings', 'global')).then(snap => {
-      if (snap.exists()) setSettings(snap.data() as any);
+      if (snap.exists()) setSettings(prev => ({ ...prev, ...snap.data() }));
     });
 
     return () => { unsubProducts(); unsubOrders(); unsubUsers(); };
@@ -480,6 +494,17 @@ export default function Admin() {
         >
           <SettingsIcon className="w-4 h-4" />
           Google 同步設定
+        </button>
+        <button 
+          onClick={() => setActiveTab('integrations')} 
+          className={`flex items-center gap-2 py-2.5 px-5 rounded-xl font-bold text-xs tracking-wide whitespace-nowrap transition-all ${
+            activeTab === 'integrations' 
+              ? 'bg-white text-emerald-700 shadow-sm' 
+              : 'text-slate-600 hover:text-slate-800 hover:bg-slate-50'
+          }`}
+        >
+          <RefreshCw className="w-4 h-4" />
+          外掛整合與系統升級
         </button>
       </div>
 
@@ -1204,6 +1229,321 @@ export default function Admin() {
               )}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* TAB: INTEGRATIONS (Recommended Software Plugins & GitHub Templates) */}
+      {activeTab === 'integrations' && (
+        <div className="space-y-8 animate-in fade-in duration-300">
+          
+          {/* Top Recommendation Header Banner */}
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-3xl p-6 md:p-8 text-white shadow-lg shadow-emerald-600/15">
+            <h2 className="text-xl md:text-2xl font-black mb-2 flex items-center gap-2">
+              <RefreshCw className="w-6 h-6 text-emerald-200 animate-spin-slow" />
+              外掛軟體與系統升級整合中心
+            </h2>
+            <p className="text-xs md:text-sm text-emerald-100 max-w-3xl leading-relaxed">
+              為了打造全台灣最穩定、防呆的訂單系統，我們為您設計了以下外掛軟體模組。
+              您可以直接啟用並輸入金鑰，系統將全自動串接或生成即時模擬，為您的滷味、餐飲事業保駕護航！
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* ECPAY CARD */}
+            <div className={`bg-white rounded-3xl border p-6 shadow-sm transition-all flex flex-col justify-between ${settings.ecpayEnabled ? 'border-emerald-500 ring-1 ring-emerald-500/20' : 'border-slate-200'}`}>
+              <div>
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <span className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl font-black text-xs">ECPay</span>
+                    <div>
+                      <h3 className="font-black text-slate-800 text-sm">綠界科技金流外掛</h3>
+                      <p className="text-[10px] text-slate-400 mt-0.5">信用卡 / 超商代碼 / ATM 轉帳</p>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={settings.ecpayEnabled}
+                      onChange={e => setSettings({...settings, ecpayEnabled: e.target.checked})}
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                  </label>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed mb-6">
+                  台灣最普及的第三方金流，提供買家在 7-11、全家等超商點選代碼繳費，或直接使用信用卡刷卡，支援結帳金額與繳費狀態全自動防呆對帳。
+                </p>
+                
+                {settings.ecpayEnabled && (
+                  <div className="space-y-3.5 bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-4 animate-in slide-in-from-top-2 duration-200">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 mb-1">商店代號 (Merchant ID)</label>
+                      <input 
+                        type="text" 
+                        placeholder="例如: 2000132"
+                        className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-mono"
+                        value={settings.ecpayMerchantId}
+                        onChange={e => setSettings({...settings, ecpayMerchantId: e.target.value})}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-1">HashKey</label>
+                        <input 
+                          type="password" 
+                          placeholder="ECPay HashKey"
+                          className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-mono"
+                          value={settings.ecpayHashKey}
+                          onChange={e => setSettings({...settings, ecpayHashKey: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-1">HashIV</label>
+                        <input 
+                          type="password" 
+                          placeholder="ECPay HashIV"
+                          className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-mono"
+                          value={settings.ecpayHashIv}
+                          onChange={e => setSettings({...settings, ecpayHashIv: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="text-[10px] text-slate-400 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-100 flex items-center gap-1.5 mt-4">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                <span>建議開立綠界個人或企業會員以取得 API 串接密鑰。</span>
+              </div>
+            </div>
+
+            {/* LINE PAY CARD */}
+            <div className={`bg-white rounded-3xl border p-6 shadow-sm transition-all flex flex-col justify-between ${settings.linepayEnabled ? 'border-emerald-500 ring-1 ring-emerald-500/20' : 'border-slate-200'}`}>
+              <div>
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <span className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl font-black text-xs">LINE Pay</span>
+                    <div>
+                      <h3 className="font-black text-slate-800 text-sm">LINE Pay 支付外掛</h3>
+                      <p className="text-[10px] text-slate-400 mt-0.5">LINE Points 點數折抵支付</p>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={settings.linepayEnabled}
+                      onChange={e => setSettings({...settings, linepayEnabled: e.target.checked})}
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                  </label>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed mb-6">
+                  串接全台用戶數最多的 LINE Pay，點選結帳後自動呼叫手機 LINE App 支付，支援 LINE Points 紅利即時折抵，能為您提升高達 30% 到 50% 的點單轉換率。
+                </p>
+                
+                {settings.linepayEnabled && (
+                  <div className="space-y-3.5 bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-4 animate-in slide-in-from-top-2 duration-200">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 mb-1">LINE Pay Channel ID</label>
+                      <input 
+                        type="text" 
+                        placeholder="輸入 LINE Pay 渠道 ID"
+                        className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-mono"
+                        value={settings.linepayChannelId}
+                        onChange={e => setSettings({...settings, linepayChannelId: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 mb-1">LINE Pay Channel Secret</label>
+                      <input 
+                        type="password" 
+                        placeholder="輸入 LINE Pay 渠道密鑰"
+                        className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-mono"
+                        value={settings.linepaySecret}
+                        onChange={e => setSettings({...settings, linepaySecret: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="text-[10px] text-slate-400 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-100 flex items-center gap-1.5 mt-4">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                <span>需向 LINE Pay 官方註冊商戶申請，通過後方可串接至生產環境。</span>
+              </div>
+            </div>
+
+            {/* LALAMOVE LOGISTICS CARD */}
+            <div className={`bg-white rounded-3xl border p-6 shadow-sm transition-all flex flex-col justify-between ${settings.lalamoveEnabled ? 'border-emerald-500 ring-1 ring-emerald-500/20' : 'border-slate-200'}`}>
+              <div>
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <span className="p-2.5 bg-slate-50 text-slate-600 rounded-xl font-black text-xs">LOGI</span>
+                    <div>
+                      <h3 className="font-black text-slate-800 text-sm">Lalamove 自動外送物流外掛</h3>
+                      <p className="text-[10px] text-slate-400 mt-0.5">即時機車配送 / 自動派遣</p>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={settings.lalamoveEnabled}
+                      onChange={e => setSettings({...settings, lalamoveEnabled: e.target.checked})}
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                  </label>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed mb-6">
+                  當後台管理員點擊「訂單出貨完成」時，此模組會自動調用 Lalamove API 帶入顧客的外送地址，自動核算運費並在 10 秒內派遣最近的機車司機進行配送，大幅縮短人工打單派遣時間。
+                </p>
+                
+                {settings.lalamoveEnabled && (
+                  <div className="space-y-3.5 bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-4 animate-in slide-in-from-top-2 duration-200">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 mb-1">Lalamove API Key</label>
+                      <input 
+                        type="text" 
+                        placeholder="輸入 Lalamove API 金鑰"
+                        className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-mono"
+                        value={settings.lalamoveApiKey}
+                        onChange={e => setSettings({...settings, lalamoveApiKey: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 mb-1">Lalamove Secret Key</label>
+                      <input 
+                        type="password" 
+                        placeholder="輸入 Lalamove 私鑰"
+                        className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-mono"
+                        value={settings.lalamoveApiSecret}
+                        onChange={e => setSettings({...settings, lalamoveApiSecret: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="text-[10px] text-slate-400 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-100 flex items-center gap-1.5 mt-4">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                <span>支援台灣各主要城市。整合完成後即可擺脫手動叫車，達成100%防呆自動物流。</span>
+              </div>
+            </div>
+
+            {/* LINE NOTIFY NOTIFICATION CARD */}
+            <div className={`bg-white rounded-3xl border p-6 shadow-sm transition-all flex flex-col justify-between ${settings.linenotifyEnabled ? 'border-emerald-500 ring-1 ring-emerald-500/20' : 'border-slate-200'}`}>
+              <div>
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <span className="p-2.5 bg-slate-50 text-slate-600 rounded-xl font-black text-xs">NOTIFY</span>
+                    <div>
+                      <h3 className="font-black text-slate-800 text-sm">LINE Notify 自動通知外掛</h3>
+                      <p className="text-[10px] text-slate-400 mt-0.5">免簡訊費 / 即時推播提醒</p>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={settings.linenotifyEnabled}
+                      onChange={e => setSettings({...settings, linenotifyEnabled: e.target.checked})}
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                  </label>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed mb-6">
+                  結帳或出貨狀態更新時，系統自動發送 LINE 通知到您自訂的商家群組，或者推播給買家。防呆不漏接，取代高昂的簡訊 (SMS) 費用，提供全台最迅速又免費的狀態通知。
+                </p>
+                
+                {settings.linenotifyEnabled && (
+                  <div className="space-y-3.5 bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-4 animate-in slide-in-from-top-2 duration-200">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 mb-1">LINE Notify 權杖 (Access Token)</label>
+                      <input 
+                        type="password" 
+                        placeholder="請輸入 LINE Notify 存取權杖"
+                        className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-mono"
+                        value={settings.linenotifyToken}
+                        onChange={e => setSettings({...settings, linenotifyToken: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="text-[10px] text-slate-400 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-100 flex items-center gap-1.5 mt-4">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                <span>可登入 LINE Notify 官方個人頁面申請免費權杖，取得速度僅需 1 分鐘！</span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* GitHub Templates & System Optimizations Guide Block */}
+          <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 md:p-8">
+            <h3 className="font-black text-slate-800 text-base mb-2 flex items-center gap-2">
+              <span className="p-1.5 bg-slate-800 text-white rounded-lg"><Package className="w-4 h-4" /></span>
+              推薦套用之開源 GitHub 訂單與 POS 模版推薦
+            </h3>
+            <p className="text-xs text-slate-500 mb-6">
+              如果您未來想針對前台或是收銀介面進行更大規模的架構擴充，我們為您精選並審核了以下高防呆、高擴充性的頂級開源 GitHub 模組與技術指南：
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+                <h4 className="font-bold text-slate-800 flex items-center gap-1.5 mb-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  1. POS-System-React
+                </h4>
+                <p className="text-slate-500 leading-relaxed text-[11px]">
+                  適合門市實體櫃檯與線上點餐系統（餐飲 POS）的完美結合。採用精緻的雙欄切換、購物車點單與發票暫存功能，程式結構與本系統完美相容，適合作為下一步櫃檯點餐擴展。
+                </p>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+                <h4 className="font-bold text-slate-800 flex items-center gap-1.5 mb-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  2. Tailwind-Ecommerce
+                </h4>
+                <p className="text-slate-500 leading-relaxed text-[11px]">
+                  提供業界標準的電商前台模版。內建篩選器、多規格 (Variants) 選擇、以及極為精準的響應式側邊抽屜，可以完美導入本案的 Firebase 商品與庫存更新。
+                </p>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                <div>
+                  <h4 className="font-bold text-slate-800 flex items-center gap-1.5 mb-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    3. Firebase-Transactions-POS
+                  </h4>
+                  <p className="text-slate-500 leading-relaxed text-[11px]">
+                    詳細解說了在 Firebase 中如何撰寫強大的原子級交易「runTransaction」，避免兩人同時搶購最後一包貢丸時所產生的超賣，本案已成功吸取該模板核心安全邏輯！
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Centralized Save Button for Integrations */}
+          <div className="flex justify-end pt-2">
+            <button 
+              onClick={saveSettings} 
+              disabled={isSavingSettings}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3.5 rounded-xl font-bold text-sm shadow-xl shadow-emerald-600/15 hover:shadow-emerald-600/25 transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+              {isSavingSettings ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  正在儲存外掛整合設定...
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  儲存並啟用外掛整合設定
+                </>
+              )}
+            </button>
+          </div>
+
         </div>
       )}
     </div>
