@@ -4,7 +4,7 @@ import { db } from '../../lib/firebase';
 import { mergeSettings, setSettingsCache } from '../../lib/useSettings';
 import { getSettingsSnapshot } from '../../lib/settingsCache';
 import { PAGE_TEXT_FIELDS } from '../../lib/pageTexts';
-import { Check, Loader2, Mail, ChevronUp, ChevronDown, Plus, Trash2, Image, X, Type, ExternalLink, Music, Send } from 'lucide-react';
+import { Check, Loader2, Mail, ChevronUp, ChevronDown, Plus, Trash2, Image, X, Type, ExternalLink, Music, Send, GripVertical } from 'lucide-react';
 import { testOrderEmail } from '../../lib/orderNotify';
 import { CarouselSlide } from '../../types';
 
@@ -15,6 +15,7 @@ export default function AdminSettings() {
   const [newSubCat, setNewSubCat] = useState<Record<string, string>>({});
   const [testingEmail, setTestingEmail] = useState(false);
   const [emailTestResult, setEmailTestResult] = useState('');
+  const [dragCat, setDragCat] = useState<string | null>(null);
 
   useEffect(() => {
     setSettings(getSettingsSnapshot());
@@ -55,6 +56,13 @@ export default function AdminSettings() {
     setSettings({ ...settings, categoryOrder: arr });
   };
 
+  const reorderCategory = (from: number, to: number) => {
+    const arr = [...(settings.categoryOrder || [])];
+    const [moved] = arr.splice(from, 1);
+    arr.splice(to, 0, moved);
+    setSettings({ ...settings, categoryOrder: arr });
+  };
+
   const addSubCategory = (cat: string) => {
     const name = (newSubCat[cat] || '').trim();
     if (!name) return;
@@ -89,9 +97,10 @@ export default function AdminSettings() {
       <div>
         <h1 className="text-2xl font-black text-stone-900 mb-1">網站設定</h1>
         <p className="text-sm text-stone-500">管理店家資訊、前台菜單文案、分類排序與 Email 通知</p>
-        <a href="/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm font-bold text-amber-600 hover:underline mt-2">
-          <ExternalLink className="w-4 h-4" />預覽前台菜單
-        </a>
+        <button type="button" onClick={() => window.open(`${window.location.origin}/`, '_blank', 'noopener,noreferrer')}
+          className="inline-flex items-center gap-1 text-sm font-bold text-amber-600 hover:underline mt-2">
+          <ExternalLink className="w-4 h-4" />預覽前台菜單（新分頁，免重新登入）
+        </button>
       </div>
 
       <section className="bg-white rounded-2xl border border-stone-200 p-6 space-y-4">
@@ -194,10 +203,18 @@ export default function AdminSettings() {
 
       <section className="bg-white rounded-2xl border border-stone-200 p-6 space-y-4">
         <h3 className="font-bold text-stone-800">分類排序與小類管理</h3>
-        <p className="text-xs text-stone-500">調整大類在前台的顯示順序，並管理各分類下的小類</p>
+        <p className="text-xs text-stone-500">拖曳 ≡ 調整大類順序（也可至「前台管理」頁面操作）</p>
         {(settings.categoryOrder || []).map((cat, idx) => (
-          <div key={cat} className="bg-stone-50 rounded-xl p-4">
+          <div key={cat} draggable onDragStart={() => setDragCat(cat)} onDragOver={(e) => e.preventDefault()}
+            onDrop={() => {
+              if (!dragCat) return;
+              const from = (settings.categoryOrder || []).indexOf(dragCat);
+              if (from >= 0 && from !== idx) reorderCategory(from, idx);
+              setDragCat(null);
+            }}
+            className={`bg-stone-50 rounded-xl p-4 ${dragCat === cat ? 'opacity-50' : ''}`}>
             <div className="flex items-center gap-2 mb-3">
+              <GripVertical className="w-4 h-4 text-stone-300 cursor-grab shrink-0" />
               <button onClick={() => moveCategory(idx, -1)} disabled={idx === 0} className="p-1 text-stone-400 hover:text-amber-600 disabled:opacity-20"><ChevronUp className="w-4 h-4" /></button>
               <button onClick={() => moveCategory(idx, 1)} disabled={idx === (settings.categoryOrder?.length || 0) - 1} className="p-1 text-stone-400 hover:text-amber-600 disabled:opacity-20"><ChevronDown className="w-4 h-4" /></button>
               <span className="font-bold text-stone-800">{cat}</span>

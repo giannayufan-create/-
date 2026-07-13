@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingBag, Users, Settings,
-  ArrowLeft, LogOut,
+  ArrowLeft, LogOut, PanelsTopLeft,
 } from 'lucide-react';
 import NotificationBell from '../../components/NotificationBell';
 import { useStore } from '../../lib/store';
@@ -9,10 +9,11 @@ import { logout } from '../../lib/firebase';
 
 const NAV = [
   { to: '/admin', label: '總覽儀表板', icon: LayoutDashboard, end: true },
+  { to: '/admin/site', label: '前台管理', icon: PanelsTopLeft },
   { to: '/admin/orders', label: '訂單管理', icon: ShoppingBag },
   { to: '/admin/products', label: '商品管理', icon: Package },
   { to: '/admin/members', label: '會員管理', icon: Users },
-  { to: '/admin/settings', label: '前台與設定', icon: Settings },
+  { to: '/admin/settings', label: '進階設定', icon: Settings },
 ];
 
 export default function AdminLayout() {

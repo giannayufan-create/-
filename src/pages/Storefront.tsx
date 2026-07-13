@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { collection, onSnapshot, query, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useStore } from '../lib/store';
+import AdminPreviewBar from '../components/AdminPreviewBar';
 import { Plus, Minus, Search, Star, TrendingUp } from 'lucide-react';
 import Carousel from '../components/Carousel';
 import { MAIN_CATEGORIES } from '../types';
@@ -18,7 +19,7 @@ export default function Storefront() {
   const [search, setSearch] = useState('');
   const [toast, setToast] = useState('');
   const [pickQtys, setPickQtys] = useState<Record<string, number>>({});
-  const { addToCart, cart } = useStore();
+  const { addToCart, cart, userRole } = useStore();
   const { settings, texts } = useSiteSettings();
 
   useEffect(() => {
@@ -132,6 +133,7 @@ export default function Storefront() {
 
   return (
     <div>
+      {userRole === 'admin' && <AdminPreviewBar />}
       {toast && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-stone-900 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-lg pointer-events-none">
           {toast}

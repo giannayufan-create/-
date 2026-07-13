@@ -17,6 +17,7 @@ export default function AdminProducts() {
   const [loading, setLoading] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
+  const [catFilter, setCatFilter] = useState('全部');
 
   useEffect(() => {
     const u1 = onSnapshot(collection(db, 'products'), (s) => {
@@ -29,6 +30,8 @@ export default function AdminProducts() {
 
   const cats = settings.categoryOrder?.length ? settings.categoryOrder : MAIN_CATEGORIES;
   const subCats = settings.subCategories || {};
+
+  const visible = catFilter === '全部' ? products : products.filter((p) => p.category === catFilter);
 
   const addProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,8 +141,16 @@ export default function AdminProducts() {
         </form>
 
         <div className="lg:col-span-2 space-y-3">
-          <p className="text-xs text-stone-400">💡 拖曳商品可調整前台顯示順序</p>
-          {products.map((p, idx) => (
+          <div className="flex flex-wrap gap-2">
+            {['全部', ...cats].map((c) => (
+              <button key={c} onClick={() => setCatFilter(c)}
+                className={`px-4 py-2 rounded-full text-xs font-bold ${catFilter === c ? 'bg-amber-600 text-white' : 'bg-white border border-stone-200 text-stone-600'}`}>
+                {c}{c !== '全部' && ` (${products.filter((p) => p.category === c).length})`}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-stone-400">💡 拖曳商品 ≡ 可調整前台顯示順序</p>
+          {visible.map((p, idx) => (
             <div key={p.id} draggable onDragStart={() => setDragId(p.id)} onDragOver={(e) => e.preventDefault()} onDrop={() => onDrop(p.id)}
               className={`flex items-center gap-2 p-3 bg-white rounded-xl border border-stone-200 hover:shadow-md transition-shadow ${dragId === p.id ? 'opacity-50' : ''}`}>
               <GripVertical className="w-4 h-4 text-stone-300 cursor-grab shrink-0" />
@@ -182,7 +193,7 @@ export default function AdminProducts() {
               )}
             </div>
           ))}
-          {products.length === 0 && (
+          {visible.length === 0 && (
             <div className="bg-white rounded-2xl border border-dashed border-stone-200 p-12 text-center text-stone-400">
               <p className="font-bold mb-1">尚無商品</p>
               <p className="text-sm">點擊「一鍵匯入範例商品」快速開始</p>

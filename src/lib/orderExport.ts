@@ -75,6 +75,31 @@ export function buildOrderEmailText(order: OrderData, forAdmin: boolean): string
   return lines.join('\n');
 }
 
+export function downloadAdminOrdersCsv(orders: any[], filename: string) {
+  if (!orders.length) return;
+  const STATUS: Record<string, string> = { pending: '待處理', processing: '處理中', processed: '已完成', cancelled: '已取消' };
+  const headers = ['訂單編號', '狀態', '下單時間', '配送日期', '配送時間', '客戶', '電話', 'Email', '地址', '商品明細', '總計'];
+  const rows = orders.map((o) => [
+    o.id.slice(0, 8),
+    STATUS[o.status] || o.status,
+    format(new Date(o.createdAt), 'yyyy/MM/dd HH:mm'),
+    o.deliveryDate || '',
+    o.deliveryTime || '',
+    o.customerName,
+    o.customerPhone,
+    o.customerEmail || '',
+    o.shippingAddress,
+    (o.items || []).map((i: any) => `${i.name}×${i.quantity}`).join('、'),
+    String(o.total),
+  ]);
+  const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([new Uint8Array([0xef, 0xbb, 0xbf]), csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
 export function downloadOrdersListCsv(orders: OrderData[], filename: string) {
   if (!orders.length) return;
   const headers = ['訂單編號', '下單時間', '配送日期', '配送時間', '客戶', '電話', '地址', '商品明細', '總計'];

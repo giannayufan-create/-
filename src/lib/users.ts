@@ -47,7 +47,7 @@ export function buildFallbackProfile(authUser: User): UserProfile {
     region: '其他',
     level: '一般',
     points: 0,
-    isProfileComplete: false,
+    isProfileComplete: isAdmin,
     provider: authUser.providerData[0]?.providerId || 'password',
     createdAt: now,
     updatedAt: now,
