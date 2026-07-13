@@ -1,0 +1,63 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A system user (admin or customer)",
+      "type": "object",
+      "properties": {
+        "role": { "type": "string", "enum": ["admin", "member"] },
+        "name": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 150 },
+        "points": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["role", "name", "email", "points", "createdAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "A food item for sale",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 500 },
+        "price": { "type": "number" },
+        "stock": { "type": "number" },
+        "imageBase64": { "type": "string" },
+        "category": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["name", "price", "stock", "createdAt"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A customer's order",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "items": { "type": "array" },
+        "total": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "processed", "cancelled"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "items", "total", "status", "createdAt"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Store settings",
+      "type": "object",
+      "properties": {
+        "spreadsheetId": { "type": "string", "maxLength": 200 },
+        "updatedAt": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "users/{userId}": { "schema": { "$ref": "#/entities/User" }, "description": "User profiles" },
+    "products/{productId}": { "schema": { "$ref": "#/entities/Product" }, "description": "Food catalog" },
+    "orders/{orderId}": { "schema": { "$ref": "#/entities/Order" }, "description": "Customer orders" },
+    "settings/{settingId}": { "schema": { "$ref": "#/entities/Settings" }, "description": "Global store settings" }
+  }
+}
