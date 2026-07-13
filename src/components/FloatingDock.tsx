@@ -1,8 +1,16 @@
+import { createPortal } from 'react-dom';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Search, MessageCircle, ArrowUp, X } from 'lucide-react';
+import { ShoppingCart, Search, MessageCircle, ArrowUp, X, Phone } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { useSiteSettings } from '../lib/useSettings';
+
+function resolveLineUrl(lineUrl?: string, lineId?: string) {
+  if (lineUrl?.trim()) return lineUrl.trim();
+  const id = (lineId || '').trim().replace(/^@/, '');
+  if (id) return `https://line.me/R/ti/p/@${id}`;
+  return '';
+}
 
 export default function FloatingDock() {
   const navigate = useNavigate();
@@ -10,42 +18,53 @@ export default function FloatingDock() {
   const { settings } = useSiteSettings();
   const [showTop, setShowTop] = useState(false);
   const totalItems = cart.reduce((s, i) => s + i.quantity, 0);
+  const lineHref = resolveLineUrl(settings.lineUrl, settings.lineId);
 
   useEffect(() => {
-    const onScroll = () => setShowTop(window.scrollY > 320);
+    const onScroll = () => setShowTop(window.scrollY > 180);
+    onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const btn = 'w-10 h-10 rounded-xl bg-[var(--color-ink)]/92 text-[#f0d2b0] flex items-center justify-center shadow-[0_8px_24px_-10px_rgba(28,20,16,0.55)] hover:bg-[var(--color-copper)] hover:text-white transition-colors backdrop-blur-sm';
+  const btn =
+    'w-9 h-9 rounded-lg bg-[var(--color-ink)]/95 text-[#f0d2b0] flex items-center justify-center shadow-[0_6px_18px_-8px_rgba(28,20,16,0.55)] hover:bg-[var(--color-copper)] hover:text-white transition-colors border border-white/10';
 
-  return (
+  const dock = (
     <>
-      <div className="fixed right-3 md:right-5 top-1/2 -translate-y-1/2 z-[90] flex flex-col gap-2">
+      <div className="fixed right-2.5 md:right-4 bottom-28 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[200] flex flex-col gap-1.5 pointer-events-auto">
         <Link to="/cart" className={`${btn} relative`} title="購物車" aria-label="購物車">
-          <ShoppingCart className="w-4 h-4" />
+          <ShoppingCart className="w-3.5 h-3.5" />
           {totalItems > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-md bg-[#c45c3a] text-white text-[9px] font-bold flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 min-w-[15px] h-3.5 px-0.5 rounded bg-[#c45c3a] text-white text-[8px] font-bold flex items-center justify-center leading-none">
               {totalItems > 99 ? '99+' : totalItems}
             </span>
           )}
         </Link>
         <button type="button" onClick={() => setSearchOpen(true)} className={btn} title="搜尋" aria-label="搜尋">
-          <Search className="w-4 h-4" />
+          <Search className="w-3.5 h-3.5" />
         </button>
-        {settings.lineUrl && (
-          <a href={settings.lineUrl} target="_blank" rel="noreferrer" className={btn} title="LINE" aria-label="LINE">
-            <MessageCircle className="w-4 h-4" />
+        {lineHref ? (
+          <a href={lineHref} target="_blank" rel="noreferrer" className={`${btn} !bg-[#06C755] !text-white hover:!bg-[#05b34c]`} title="LINE" aria-label="LINE">
+            <MessageCircle className="w-3.5 h-3.5" />
           </a>
-        )}
-        <button type="button" onClick={() => setContactOpen(true)} className={`${btn} text-[10px] font-bold tracking-wider`} title="聯絡我們" aria-label="聯絡我們">
-          聯
-        </button>
-        {showTop && (
-          <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={btn} title="回到頂部" aria-label="回到頂部">
-            <ArrowUp className="w-4 h-4" />
+        ) : (
+          <button type="button" onClick={() => setContactOpen(true)} className={`${btn} !bg-[#06C755] !text-white`} title="LINE／聯絡" aria-label="LINE">
+            <MessageCircle className="w-3.5 h-3.5" />
           </button>
         )}
+        <button type="button" onClick={() => setContactOpen(true)} className={btn} title="聯絡我們" aria-label="聯絡我們">
+          <Phone className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className={`${btn} transition-opacity ${showTop ? 'opacity-100' : 'opacity-40'}`}
+          title="回到頂部"
+          aria-label="回到頂部"
+        >
+          <ArrowUp className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {isSearchOpen && (
@@ -88,4 +107,7 @@ export default function FloatingDock() {
       )}
     </>
   );
+
+  if (typeof document === 'undefined') return null;
+  return createPortal(dock, document.body);
 }

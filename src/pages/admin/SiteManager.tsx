@@ -28,16 +28,32 @@ export default function SiteManager() {
   const [dragCat, setDragCat] = useState<string | null>(null);
   const [dragSlide, setDragSlide] = useState<number | null>(null);
   const [uploadErr, setUploadErr] = useState('');
+  const [saveErr, setSaveErr] = useState('');
 
   useEffect(() => { setSettings(getSettingsSnapshot()); }, []);
 
   const save = async () => {
     setLoading(true);
-    await setDoc(doc(db, 'settings', 'global'), { ...settings, updatedAt: new Date().toISOString() });
-    setSettingsCache(settings);
-    setLoading(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    setSaveErr('');
+    try {
+      const payload = JSON.stringify(settings);
+      if (payload.length > 900_000) {
+        throw new Error('資料太大（輪播圖過多或過大）。請減少張數或改用較小照片後再儲存');
+      }
+      await setDoc(doc(db, 'settings', 'global'), { ...settings, updatedAt: new Date().toISOString() });
+      setSettingsCache(settings);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (e: any) {
+      const msg = e?.message || '儲存失敗';
+      if (String(msg).includes('exceeds') || String(msg).includes('too large') || e?.code === 'invalid-argument') {
+        setSaveErr('儲存失敗：輪播圖片太大。請改傳較小的照片後再按儲存');
+      } else {
+        setSaveErr(msg);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const uploadSlideImage = async (idx: number, file: File) => {
@@ -45,6 +61,7 @@ export default function SiteManager() {
     try {
       const base64 = await fileToBase64Hero(file);
       updateSlide(idx, 'image', base64);
+      setUploadErr('已加入預覽，請記得按左側「儲存變更」');
     } catch (e: any) {
       setUploadErr(e.message || '上傳失敗');
     }
@@ -101,6 +118,7 @@ export default function SiteManager() {
             className="w-full flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl text-sm font-bold disabled:opacity-50">
             {loading ? <><Loader2 className="w-4 h-4 animate-spin" />儲存中</> : saved ? <><Check className="w-4 h-4" />已儲存</> : <><Save className="w-4 h-4" />儲存變更</>}
           </button>
+          {saveErr && <p className="text-[11px] text-red-600 font-bold leading-snug">{saveErr}</p>}
         </div>
       </aside>
 
@@ -109,8 +127,9 @@ export default function SiteManager() {
         {active === 'carousel' && (
           <div className="space-y-4">
             <h2 className="font-black text-lg text-stone-900">首頁輪播幻燈片</h2>
-            <p className="text-xs text-stone-500">可直接上傳照片，或貼圖片網址。拖曳 ≡ 調整順序</p>
-            {uploadErr && <p className="text-xs text-red-600 font-bold">{uploadErr}</p>}
+            <p className="text-xs text-stone-500">點「上傳照片」選圖 → 左側按「儲存變更」才會上線。建議每張小於 2MB。</p>
+            {uploadErr && <p className="text-xs text-amber-800 font-bold bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">{uploadErr}</p>}
+            {saveErr && <p className="text-xs text-red-600 font-bold">{saveErr}</p>}
             {(settings.carousel || []).map((slide, idx) => (
               <div key={idx} draggable onDragStart={() => setDragSlide(idx)} onDragOver={(e) => e.preventDefault()}
                 onDrop={() => { if (dragSlide !== null && dragSlide !== idx) reorderSlides(dragSlide, idx); setDragSlide(null); }}

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Phone, MessageCircle, MapPin, Send, Loader2, CheckCircle } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { useSiteSettings } from '../lib/useSettings';
@@ -38,7 +39,7 @@ export default function ContactModal() {
 
   if (!isContactOpen) return null;
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     if (!name.trim() || !email.trim() || !message.trim()) {
@@ -78,7 +79,7 @@ export default function ContactModal() {
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[420] bg-[var(--color-ink)]/55 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setContactOpen(false)}>
       <div
         className="w-full max-w-3xl bg-[#fffcf8] rounded-3xl border border-[#eadfce] overflow-hidden shadow-[0_30px_80px_-24px_rgba(28,20,16,0.5)] max-h-[92vh] overflow-y-auto"
@@ -104,11 +105,19 @@ export default function ContactModal() {
                   <span><span className="text-[#f0d2b0] font-bold">電話</span><br />{settings.storePhone}</span>
                 </a>
               )}
-              {settings.lineUrl && (
-                <a href={settings.lineUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2.5 text-[#e8c49a] hover:text-white font-medium transition-colors">
+              {(settings.lineUrl || settings.lineId) && (
+                <a
+                  href={settings.lineUrl?.trim() || `https://line.me/R/ti/p/@${(settings.lineId || '').replace(/^@/, '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2.5 text-[#e8c49a] hover:text-white font-medium transition-colors"
+                >
                   <MessageCircle className="w-4 h-4" />
                   <span>LINE {settings.lineId || '立即聯繫'}</span>
                 </a>
+              )}
+              {!settings.storePhone && !settings.lineUrl && !settings.lineId && (
+                <p className="text-xs text-[#9a8674]">請至後台「店家資訊」填寫電話與 LINE</p>
               )}
             </div>
             {!user && (
@@ -168,6 +177,7 @@ export default function ContactModal() {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
