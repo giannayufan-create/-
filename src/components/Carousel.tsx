@@ -6,7 +6,7 @@ export default function Carousel({ slides, storeName }: { slides: CarouselSlide[
   const [idx, setIdx] = useState(0);
   const items = slides?.length
     ? slides
-    : [{ image: '', title: storeName, subtitle: '慢火熬煮的溫度，線上為您送到' }];
+    : [{ image: '', title: '', subtitle: '' }];
 
   useEffect(() => {
     const t = setInterval(() => setIdx((i) => (i + 1) % items.length), 5500);
@@ -15,10 +15,14 @@ export default function Carousel({ slides, storeName }: { slides: CarouselSlide[
 
   const slide = items[idx];
   const hasImage = Boolean(slide.image);
+  const title = slide.title?.trim() || '';
+  const subtitle = slide.subtitle?.trim() || '';
+  const showText = Boolean(title || subtitle);
+  // 無圖且無文字時，才用店名當後備，避免空白輪播
+  const fallbackTitle = !hasImage && !showText ? storeName : '';
 
   return (
     <section className="relative -mx-4 md:mx-0 mb-10 overflow-hidden md:rounded-3xl min-h-[52vh] md:min-h-[360px] text-white">
-      {/* 無圖時才用暖色底；有圖就完整顯示照片 */}
       {!hasImage && (
         <div className="absolute inset-0 bg-[linear-gradient(135deg,#1c1410_0%,#3a2418_42%,#8f4e28_78%,#b56a3a_100%)]" />
       )}
@@ -30,31 +34,36 @@ export default function Carousel({ slides, storeName }: { slides: CarouselSlide[
           style={{ filter: 'saturate(1.12) contrast(1.04)' }}
         />
       )}
-      {/* 只在文字區加一點淡陰影，不整張蓋黑 */}
-      {hasImage && (
+      {/* 有文字才加淡陰影，純照片不加遮罩 */}
+      {hasImage && (showText || fallbackTitle) && (
         <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/10 to-transparent md:from-black/30 md:via-transparent md:to-transparent pointer-events-none" />
       )}
 
-      <div className="relative z-10 px-6 py-12 md:px-14 md:py-16 flex flex-col justify-end md:justify-center min-h-[52vh] md:min-h-[360px]">
-        <p
-          className="font-display text-[11px] tracking-[0.35em] text-[#f0d2b0] mb-4 fade-up"
-          style={{ textShadow: '0 2px 12px rgba(0,0,0,0.45)' }}
-        >
-          {storeName}
-        </p>
-        <h1
-          className="font-display text-4xl md:text-5xl font-bold leading-tight mb-3 max-w-xl fade-up-delay"
-          style={{ textShadow: '0 3px 18px rgba(0,0,0,0.55)' }}
-        >
-          {slide.title || storeName}
-        </h1>
-        <p
-          className="text-white text-sm md:text-base max-w-md leading-relaxed fade-up-delay"
-          style={{ textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}
-        >
-          {slide.subtitle || '火鍋料 · 水餃 · 滷味，溫暖送到你手上'}
-        </p>
-      </div>
+      {(showText || fallbackTitle) && (
+        <div className="relative z-10 px-6 py-12 md:px-14 md:py-16 flex flex-col justify-end md:justify-center min-h-[52vh] md:min-h-[360px]">
+          {(title || fallbackTitle) && (
+            <h1
+              className="font-display text-4xl md:text-5xl font-bold leading-tight mb-3 max-w-xl fade-up"
+              style={{ textShadow: '0 3px 18px rgba(0,0,0,0.55)' }}
+            >
+              {title || fallbackTitle}
+            </h1>
+          )}
+          {subtitle && (
+            <p
+              className="text-white text-sm md:text-base max-w-md leading-relaxed fade-up-delay"
+              style={{ textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}
+            >
+              {subtitle}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* 純圖片時撐高度 */}
+      {hasImage && !showText && !fallbackTitle && (
+        <div className="min-h-[52vh] md:min-h-[360px]" aria-hidden />
+      )}
 
       {items.length > 1 && (
         <>
