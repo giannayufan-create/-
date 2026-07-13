@@ -5,7 +5,7 @@ import { db } from '../lib/firebase';
 import { useStore } from '../lib/store';
 import { notifyOrderPlaced } from '../lib/orderNotify';
 import { DELIVERY_TIME_SLOTS, minDeliveryDate, maxDeliveryDate } from '../lib/deliverySlots';
-import { Minus, Plus, Trash2, ShoppingCart, ArrowRight, AlertCircle, Loader2, CheckCircle, Calendar, Wallet, Truck } from 'lucide-react';
+import { Minus, Plus, Trash2, ShoppingCart, ArrowRight, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
 import { useSiteSettings } from '../lib/useSettings';
 import { DELIVERY_METHOD_OPTIONS, PAYMENT_METHOD_OPTIONS, PaymentMethodId, DeliveryMethodId } from '../types';
 
@@ -38,6 +38,7 @@ export default function Cart() {
   const enabledPayments = paymentOptions.filter((o) => o.enabled);
   const enabledDeliveries = deliveryOptions.filter((o) => o.enabled);
   const onlyCashOpen = enabledPayments.length === 1 && enabledPayments[0]?.id === 'cash';
+  const itemCount = cart.reduce((s, i) => s + i.quantity, 0);
 
   useEffect(() => {
     return onSnapshot(collection(db, 'products'), (s) => setProducts(s.docs.map((d) => ({ id: d.id, ...d.data() }))));
@@ -133,6 +134,15 @@ export default function Cart() {
     }
   };
 
+  const chip = (active: boolean, disabled: boolean) =>
+    `px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+      disabled
+        ? 'bg-stone-50 text-stone-300 border-stone-100 cursor-not-allowed'
+        : active
+          ? 'bg-[var(--color-ink)] text-[#f0d2b0] border-[var(--color-ink)]'
+          : 'bg-white text-stone-600 border-stone-200 hover:border-amber-400'
+    }`;
+
   if (!cart.length && !success) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center py-20">
@@ -145,182 +155,168 @@ export default function Cart() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto w-full">
-      <h1 className="font-display text-2xl font-bold text-[var(--color-ink)] mb-6 tracking-wide">{texts.cartTitle}</h1>
+    <div className="max-w-2xl mx-auto w-full pb-28">
+      <div className="flex items-end justify-between mb-3">
+        <h1 className="font-display text-xl font-bold text-[var(--color-ink)] tracking-wide">{texts.cartTitle}</h1>
+        {cart.length > 0 && (
+          <p className="text-xs font-bold text-stone-400">{cart.length} 項 · 共 {itemCount} 份</p>
+        )}
+      </div>
 
       {error && (
-        <div className="bg-[#fdf2ef] border border-[#f0d5ce] text-[#b5452c] p-4 rounded-xl mb-4 flex items-start gap-2 text-sm">
-          <AlertCircle className="w-5 h-5 shrink-0" />{error}
+        <div className="bg-[#fdf2ef] border border-[#f0d5ce] text-[#b5452c] px-3 py-2.5 rounded-xl mb-3 flex items-start gap-2 text-xs">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{error}
         </div>
       )}
       {success && (
-        <div className="bg-[#eef6ef] border border-[#cfe3d1] text-[#2f6b3a] p-5 rounded-xl mb-4 flex items-start gap-3 fade-up">
-          <CheckCircle className="w-6 h-6 shrink-0 text-[#3d8b4a]" />
+        <div className="bg-[#eef6ef] border border-[#cfe3d1] text-[#2f6b3a] p-4 rounded-xl mb-3 flex items-start gap-3 fade-up">
+          <CheckCircle className="w-5 h-5 shrink-0 text-[#3d8b4a]" />
           <div>
-            <p className="font-display font-bold text-base">{texts.checkoutSuccessTitle}</p>
-            <p className="text-sm mt-1.5 text-[#3d6b45]">{texts.checkoutSuccessContact}</p>
+            <p className="font-display font-bold text-sm">{texts.checkoutSuccessTitle}</p>
+            <p className="text-xs mt-1 text-[#3d6b45]">{texts.checkoutSuccessContact}</p>
           </div>
         </div>
       )}
 
       {cart.length > 0 && (
         <>
-          <div className="bg-white rounded-2xl border border-stone-200 divide-y divide-stone-100 mb-6">
-            {cart.map((item) => {
-              const stock = products.find((p) => p.id === item.productId)?.stock ?? 999;
-              const over = item.quantity > stock;
-              const soldOut = stock <= 0;
-              return (
-                <div key={item.productId} className={`p-4 flex items-center gap-4 ${over || soldOut ? 'bg-red-50/50' : ''}`}>
-                  <div className="flex-1">
-                    <p className="font-bold text-stone-800">{item.name}</p>
-                    <p className="text-xs text-stone-500">${item.price} / 份</p>
-                    {soldOut && <p className="text-xs text-red-600 font-bold mt-1">目前缺貨中</p>}
-                    {!soldOut && over && <p className="text-xs text-red-600 font-bold mt-1">庫存僅剩 {stock} 份</p>}
+          {/* 商品清單：品項多時可捲動，不把整頁撐很長 */}
+          <div className="bg-white rounded-2xl border border-stone-200 mb-3 overflow-hidden">
+            <div className={`divide-y divide-stone-100 ${cart.length > 5 ? 'max-h-64 overflow-y-auto' : ''}`}>
+              {cart.map((item) => {
+                const stock = products.find((p) => p.id === item.productId)?.stock ?? 999;
+                const over = item.quantity > stock;
+                const soldOut = stock <= 0;
+                return (
+                  <div key={item.productId} className={`px-3 py-2.5 flex items-center gap-2 ${over || soldOut ? 'bg-red-50/50' : ''}`}>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-stone-800 text-sm truncate">{item.name}</p>
+                      <p className="text-[11px] text-stone-400">
+                        ${item.price}
+                        {soldOut ? ' · 缺貨' : over ? ` · 剩 ${stock}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-0.5 bg-stone-100 rounded-lg p-0.5 shrink-0">
+                      <button type="button" onClick={() => updateQuantity(item.productId, Math.max(1, item.quantity - 1))} className="w-7 h-7 flex items-center justify-center rounded-md bg-white"><Minus className="w-3 h-3" /></button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={Math.max(1, stock)}
+                        value={item.quantity}
+                        disabled={soldOut}
+                        onChange={(e) => {
+                          const n = Math.floor(Number(e.target.value));
+                          if (!Number.isFinite(n)) return;
+                          updateQuantity(item.productId, Math.min(Math.max(1, n), Math.max(1, stock)));
+                        }}
+                        className="w-9 text-center font-bold text-xs bg-white rounded-md border border-stone-200 py-1 focus:outline-none disabled:opacity-40"
+                      />
+                      <button type="button" disabled={soldOut || item.quantity >= stock} onClick={() => updateQuantity(item.productId, item.quantity + 1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-white disabled:opacity-30"><Plus className="w-3 h-3" /></button>
+                    </div>
+                    <p className="font-bold text-stone-800 text-sm w-12 text-right shrink-0">${(item.price * item.quantity).toFixed(0)}</p>
+                    <button type="button" onClick={() => removeFromCart(item.productId)} className="text-stone-300 hover:text-red-500 p-1 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
-                  <div className="flex items-center gap-1 bg-stone-100 rounded-xl p-1">
-                    <button type="button" onClick={() => updateQuantity(item.productId, Math.max(1, item.quantity - 1))} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white"><Minus className="w-3.5 h-3.5" /></button>
-                    <input
-                      type="number"
-                      min={1}
-                      max={Math.max(1, stock)}
-                      value={item.quantity}
-                      disabled={soldOut}
-                      onChange={(e) => {
-                        const n = Math.floor(Number(e.target.value));
-                        if (!Number.isFinite(n)) return;
-                        updateQuantity(item.productId, Math.min(Math.max(1, n), Math.max(1, stock)));
-                      }}
-                      className="w-12 text-center font-bold text-sm bg-white rounded-lg border border-stone-200 py-1 focus:outline-none focus:ring-2 focus:ring-amber-400/40 disabled:opacity-40"
-                    />
-                    <button type="button" disabled={soldOut || item.quantity >= stock} onClick={() => updateQuantity(item.productId, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white disabled:opacity-30"><Plus className="w-3.5 h-3.5" /></button>
-                  </div>
-                  <p className="font-bold text-stone-800 w-16 text-right">${(item.price * item.quantity).toFixed(0)}</p>
-                  <button type="button" onClick={() => removeFromCart(item.productId)} className="text-stone-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 結帳資訊合併成一塊，減少卡片堆疊 */}
+          <div className="bg-white rounded-2xl border border-stone-200 p-3.5 space-y-3.5 mb-3">
+            {userData?.isProfileComplete && (
+              <div className="flex items-start justify-between gap-3 pb-3 border-b border-stone-100">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold text-stone-400 mb-0.5">收件人</p>
+                  <p className="text-sm font-bold text-stone-800">{userData.name} · {userData.phone}</p>
+                  <p className="text-[11px] text-stone-500 mt-0.5 line-clamp-2">{userData.shippingAddress}</p>
                 </div>
-              );
-            })}
-          </div>
-
-          {userData?.isProfileComplete && (
-            <div className="bg-white rounded-2xl border border-stone-200 p-4 mb-4 text-sm">
-              <p className="font-bold text-stone-700 mb-2">配送資訊</p>
-              <p className="text-stone-600">{userData.name} · {userData.phone}</p>
-              <p className="text-stone-500 text-xs mt-1">{userData.shippingAddress}</p>
-              <button type="button" onClick={() => setProfileModalOpen(true)} className="text-xs text-amber-600 font-bold mt-2">修改 →</button>
-            </div>
-          )}
-
-          <div className="bg-white rounded-2xl border border-stone-200 p-4 mb-4">
-            <p className="font-bold text-stone-700 mb-2 flex items-center gap-2">
-              <Truck className="w-4 h-4 text-amber-600" />
-              配送方式 <span className="text-red-500">*</span>
-            </p>
-            <p className="text-xs text-stone-500 mb-3">目前僅提供本人親自送達</p>
-            <div className="space-y-2">
-              {deliveryOptions.map((opt) => (
-                <label
-                  key={opt.id}
-                  className={`flex items-center gap-3 rounded-xl border px-3 py-3 text-sm font-bold ${
-                    !opt.enabled
-                      ? 'border-stone-100 bg-stone-50 text-stone-400 cursor-not-allowed'
-                      : deliveryMethod === opt.id
-                        ? 'border-amber-400 bg-amber-50 text-amber-900 cursor-pointer'
-                        : 'border-stone-200 bg-white text-stone-700 cursor-pointer hover:border-amber-300'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="deliveryMethod"
-                    className="accent-amber-600"
-                    disabled={!opt.enabled}
-                    checked={deliveryMethod === opt.id}
-                    onChange={() => setDeliveryMethod(opt.id)}
-                  />
-                  <span className="flex-1">{opt.label}</span>
-                  {!opt.enabled && <span className="text-[10px] font-bold text-stone-400">尚未開放</span>}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-stone-200 p-4 mb-4">
-            <p className="font-bold text-stone-700 mb-2 flex items-center gap-2">
-              <Wallet className="w-4 h-4 text-amber-600" />
-              付款方式 <span className="text-red-500">*</span>
-            </p>
-            {onlyCashOpen && (
-              <p className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-3">
-                目前只接受現金
-              </p>
-            )}
-            <div className="space-y-2">
-              {paymentOptions.map((opt) => (
-                <label
-                  key={opt.id}
-                  className={`flex items-center gap-3 rounded-xl border px-3 py-3 text-sm font-bold ${
-                    !opt.enabled
-                      ? 'border-stone-100 bg-stone-50 text-stone-400 cursor-not-allowed'
-                      : paymentMethod === opt.id
-                        ? 'border-amber-400 bg-amber-50 text-amber-900 cursor-pointer'
-                        : 'border-stone-200 bg-white text-stone-700 cursor-pointer hover:border-amber-300'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    className="accent-amber-600"
-                    disabled={!opt.enabled}
-                    checked={paymentMethod === opt.id}
-                    onChange={() => setPaymentMethod(opt.id)}
-                  />
-                  <span className="flex-1">{opt.label}</span>
-                  {!opt.enabled && <span className="text-[10px] font-bold text-stone-400">尚未開放</span>}
-                  {opt.enabled && opt.id === 'cash' && onlyCashOpen && (
-                    <span className="text-[10px] font-bold text-amber-700">目前可選</span>
-                  )}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-stone-200 p-4 mb-6">
-            <p className="font-bold text-stone-700 mb-3 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-amber-600" />
-              {texts.deliveryTitle} <span className="text-red-500">*</span>
-            </p>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-stone-500 mb-1">{texts.deliveryDateLabel}</label>
-                <input type="date" required value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)}
-                  min={minDeliveryDate()} max={maxDeliveryDate()}
-                  className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none" />
+                <button type="button" onClick={() => setProfileModalOpen(true)} className="text-[11px] text-amber-600 font-bold shrink-0">修改</button>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-stone-500 mb-1">{texts.deliveryTimeLabel}</label>
-                <select required value={deliveryTime} onChange={(e) => setDeliveryTime(e.target.value)}
-                  className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-amber-400 focus:outline-none">
-                  <option value="">請選擇時間</option>
+            )}
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[11px] font-bold text-stone-400">配送方式 *</p>
+                <p className="text-[10px] text-stone-400">本人親自送達</p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {deliveryOptions.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    disabled={!opt.enabled}
+                    onClick={() => setDeliveryMethod(opt.id)}
+                    className={chip(deliveryMethod === opt.id, !opt.enabled)}
+                  >
+                    {opt.label}{!opt.enabled ? '（未開放）' : ''}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[11px] font-bold text-stone-400">付款方式 *</p>
+                {onlyCashOpen && <p className="text-[10px] font-bold text-amber-700">目前只接受現金</p>}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {paymentOptions.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    disabled={!opt.enabled}
+                    onClick={() => setPaymentMethod(opt.id)}
+                    className={chip(paymentMethod === opt.id, !opt.enabled)}
+                  >
+                    {opt.label}{!opt.enabled ? '（未開放）' : ''}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[11px] font-bold text-stone-400 mb-1.5">{texts.deliveryTitle} *</p>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="date"
+                  required
+                  value={deliveryDate}
+                  onChange={(e) => setDeliveryDate(e.target.value)}
+                  min={minDeliveryDate()}
+                  max={maxDeliveryDate()}
+                  className="w-full bg-stone-50 border border-stone-200 rounded-lg px-2.5 py-2 text-xs focus:ring-2 focus:ring-amber-400 focus:outline-none"
+                />
+                <select
+                  required
+                  value={deliveryTime}
+                  onChange={(e) => setDeliveryTime(e.target.value)}
+                  className="w-full bg-stone-50 border border-stone-200 rounded-lg px-2.5 py-2 text-xs font-bold focus:ring-2 focus:ring-amber-400 focus:outline-none"
+                >
+                  <option value="">選擇時段</option>
                   {DELIVERY_TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
             </div>
           </div>
 
-          <div className="surface-warm rounded-2xl p-5">
-            <div className="flex justify-between items-center mb-4">
-              <span className="font-bold text-[#6b5648]">總計</span>
-              <span className="font-display text-3xl font-bold text-[var(--color-copper)]">${cartTotal.toFixed(0)}</span>
+          {/* 底部固定結帳列，不用一直往下找按鈕 */}
+          <div className="fixed bottom-16 md:bottom-4 left-0 right-0 z-40 px-3 pointer-events-none">
+            <div className="max-w-2xl mx-auto pointer-events-auto surface-warm border border-[#eadfce] rounded-2xl shadow-[0_12px_40px_-12px_rgba(28,20,16,0.35)] p-3.5">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div>
+                  <p className="text-[10px] text-[#9a8674]">{texts.checkoutNote || '結帳後商家會盡速為您安排送貨'}</p>
+                  <p className="font-display text-2xl font-bold text-[var(--color-copper)] leading-tight">${cartTotal.toFixed(0)}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={checkout}
+                  disabled={checking || oversold || !deliveryDate || !deliveryTime || !paymentMethod || !deliveryMethod}
+                  className="btn-ink font-bold px-5 py-3 rounded-xl flex items-center gap-2 disabled:opacity-40 shrink-0 text-sm"
+                >
+                  {checking ? <><Loader2 className="w-4 h-4 animate-spin" />處理中</> : <><span>{texts.checkoutBtn}</span><ArrowRight className="w-4 h-4" /></>}
+                </button>
+              </div>
             </div>
-            <p className="text-xs text-[#9a8674] mb-4">{texts.checkoutNote || '結帳後商家會盡速為您安排送貨'}</p>
-            <button
-              type="button"
-              onClick={checkout}
-              disabled={checking || oversold || !deliveryDate || !deliveryTime || !paymentMethod || !deliveryMethod}
-              className="w-full btn-ink font-bold py-4 rounded-xl flex items-center justify-center gap-2 disabled:opacity-40"
-            >
-              {checking ? <><Loader2 className="w-5 h-5 animate-spin" />處理中...</> : <><span>{texts.checkoutBtn}</span><ArrowRight className="w-5 h-5" /></>}
-            </button>
           </div>
         </>
       )}
