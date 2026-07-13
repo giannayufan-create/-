@@ -1,8 +1,10 @@
 import { Phone, MapPin, MessageCircle, Truck } from 'lucide-react';
 import { useSiteSettings } from '../lib/useSettings';
+import { useStore } from '../lib/store';
 
 export default function SiteFooter() {
   const { settings, texts } = useSiteSettings();
+  const setContactOpen = useStore((s) => s.setContactOpen);
 
   return (
     <footer className="mt-auto bg-[linear-gradient(180deg,#2a211c_0%,#1c1410_100%)] text-[#d9c8b6]">
@@ -26,6 +28,13 @@ export default function SiteFooter() {
                   <MessageCircle className="w-4 h-4" /> LINE：{settings.lineId || '聯絡我們'}
                 </a>
               )}
+              <button
+                type="button"
+                onClick={() => setContactOpen(true)}
+                className="text-[#e8c49a] hover:text-white font-bold underline underline-offset-4 transition-colors"
+              >
+                開啟聯絡表單
+              </button>
             </div>
           </div>
           <div>

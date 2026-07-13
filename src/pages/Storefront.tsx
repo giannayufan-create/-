@@ -3,10 +3,12 @@ import { collection, onSnapshot, query, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useStore } from '../lib/store';
 import AdminPreviewBar from '../components/AdminPreviewBar';
-import { Plus, Minus, Search, Star, TrendingUp, ShoppingCart, ArrowUp } from 'lucide-react';
+import ProductDetailModal from '../components/ProductDetailModal';
+import FavoriteButton from '../components/FavoriteButton';
+import { Plus, Minus, Search, Star, TrendingUp, ShoppingCart, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Carousel from '../components/Carousel';
-import { MAIN_CATEGORIES } from '../types';
+import { CARD_SIZE_PRESETS, CardSizeId, MAIN_CATEGORIES } from '../types';
 import { useSiteSettings } from '../lib/useSettings';
 
 const PLACEHOLDER: Record<string, string> = {
@@ -15,24 +17,24 @@ const PLACEHOLDER: Record<string, string> = {
   '滷味': '滷',
 };
 
+function resolveCardSize(category: string, settings: { categoryCardSizes?: Record<string, CardSizeId>; defaultCardSize?: CardSizeId }) {
+  const id = settings.categoryCardSizes?.[category] || settings.defaultCardSize || 'M';
+  return CARD_SIZE_PRESETS.find((p) => p.id === id) || CARD_SIZE_PRESETS[1];
+}
+
 export default function Storefront() {
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('全部');
   const [subCategory, setSubCategory] = useState('全部');
-  const [search, setSearch] = useState('');
   const [toast, setToast] = useState('');
   const [pickQtys, setPickQtys] = useState<Record<string, number>>({});
-  const { addToCart, cart, cartTotal, userRole } = useStore();
+  const [detailProduct, setDetailProduct] = useState<any | null>(null);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const { addToCart, cart, cartTotal, userRole, menuSearch, setMenuSearch, userData } = useStore();
   const { settings, texts } = useSiteSettings();
-  const [showTop, setShowTop] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setShowTop(window.scrollY > 400);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  const favoriteIds = userData?.favorites || [];
 
   useEffect(() => {
     const u1 = onSnapshot(query(collection(db, 'products')), (s) => {
@@ -58,14 +60,15 @@ export default function Storefront() {
 
   const filtered = useMemo(() => {
     let list = products;
+    if (showFavoritesOnly) list = list.filter((p) => favoriteIds.includes(p.id));
     if (category !== '全部') list = list.filter((p) => p.category === category);
     if (subCategory !== '全部') list = list.filter((p) => p.subCategory === subCategory);
-    if (search.trim()) {
-      const q = search.toLowerCase();
+    if (menuSearch.trim()) {
+      const q = menuSearch.toLowerCase();
       list = list.filter((p) => p.name.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q));
     }
     return list;
-  }, [products, category, subCategory, search]);
+  }, [products, category, subCategory, menuSearch, showFavoritesOnly, favoriteIds]);
 
   const featured = products.filter((p) => p.isFeatured).slice(0, 4);
   const bestsellers = [...products].sort((a, b) => (salesMap[b.id] || 0) - (salesMap[a.id] || 0)).filter((p) => salesMap[p.id] > 0).slice(0, 4);
@@ -103,10 +106,18 @@ export default function Storefront() {
     const inCart = cart.find((i) => i.productId === p.id)?.quantity || 0;
     const soldOut = p.stock <= 0;
     const maxPick = Math.max(0, p.stock - inCart);
+    const size = resolveCardSize(p.category, settings);
 
     return (
       <div className={`product-card rounded-2xl overflow-hidden flex flex-col ${soldOut ? 'opacity-85' : ''}`}>
-        <div className="h-44 bg-[linear-gradient(145deg,#f6efe6,#e8d4c0)] flex items-center justify-center relative overflow-hidden shrink-0">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setDetailProduct(p)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setDetailProduct(p); }}
+          className="bg-[linear-gradient(145deg,#f6efe6,#e8d4c0)] flex items-center justify-center relative overflow-hidden shrink-0 w-full text-left cursor-pointer"
+          style={{ height: size.imageHeight }}
+        >
           {p.imageBase64 ? (
             <img src={p.imageBase64} alt={p.name} className="w-full h-full object-cover" />
           ) : (
@@ -116,22 +127,27 @@ export default function Storefront() {
             {p.category}{p.subCategory ? ` · ${p.subCategory}` : ''}
           </span>
           {p.isFeatured && (
-            <span className="absolute top-2.5 right-2.5 bg-[#f0d2b0] text-[var(--color-ink)] text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-0.5">
+            <span className="absolute top-2.5 left-2.5 mt-8 bg-[#f0d2b0] text-[var(--color-ink)] text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-0.5 pointer-events-none">
               <Star className="w-3 h-3 fill-current" />精選
             </span>
           )}
+          <div className="absolute top-2.5 right-2.5 z-10" onClick={(e) => e.stopPropagation()}>
+            <FavoriteButton productId={p.id} className="w-8 h-8 shadow-sm" />
+          </div>
           {soldOut && (
-            <div className="absolute inset-0 bg-[var(--color-ink)]/55 flex items-center justify-center">
+            <div className="absolute inset-0 bg-[var(--color-ink)]/55 flex items-center justify-center pointer-events-none">
               <span className="bg-[#8b3a2a] text-white font-bold text-sm px-4 py-2 rounded-xl">目前缺貨中</span>
             </div>
           )}
         </div>
         <div className="p-4 flex flex-col flex-1">
-          <div className="flex justify-between items-start gap-2 mb-1.5">
-            <h3 className="font-display font-bold text-[var(--color-ink)] text-[15px] leading-snug">{p.name}</h3>
-            <span className="font-black text-[var(--color-copper)] text-lg shrink-0">${p.price}</span>
-          </div>
-          <p className="text-xs text-[#7a6555] mb-2 line-clamp-2 flex-1 leading-relaxed">{p.description}</p>
+          <button type="button" onClick={() => setDetailProduct(p)} className="text-left w-full">
+            <div className="flex justify-between items-start gap-2 mb-1.5">
+              <h3 className="font-display font-bold text-[var(--color-ink)] leading-snug" style={{ fontSize: size.titleSize }}>{p.name}</h3>
+              <span className="font-black text-[var(--color-copper)] text-lg shrink-0">${p.price}</span>
+            </div>
+            <p className="text-xs text-[#7a6555] mb-2 line-clamp-2 leading-relaxed">{p.description}</p>
+          </button>
           <p className="text-[10px] mb-3">
             {soldOut ? (
               <span className="text-[#b5452c] font-bold">目前缺貨中</span>
@@ -173,6 +189,15 @@ export default function Storefront() {
     );
   };
 
+  const gridClass = category === '全部'
+    ? 'grid sm:grid-cols-2 lg:grid-cols-3 gap-4'
+    : (() => {
+        const size = resolveCardSize(category, settings);
+        if (size.id === 'S') return 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3';
+        if (size.id === 'XL') return 'grid sm:grid-cols-2 gap-4';
+        return 'grid sm:grid-cols-2 lg:grid-cols-3 gap-4';
+      })();
+
   return (
     <div>
       {userRole === 'admin' && <AdminPreviewBar />}
@@ -204,19 +229,29 @@ export default function Storefront() {
         </section>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+      <div id="menu-search-anchor" className="flex flex-col sm:flex-row gap-3 mb-4 scroll-mt-24">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-[#9a8674] absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={texts.searchPlaceholder}
+          <input value={menuSearch} onChange={(e) => setMenuSearch(e.target.value)} placeholder={texts.searchPlaceholder}
             className="w-full pl-10 pr-4 py-3 surface-warm rounded-xl text-sm focus:ring-2 focus:ring-[var(--color-copper)]/30 focus:outline-none" />
         </div>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-2 mb-3 scrollbar-hide">
+        <button
+          type="button"
+          onClick={() => setShowFavoritesOnly((v) => !v)}
+          className={`chip whitespace-nowrap px-4 py-2.5 text-sm font-bold border flex items-center gap-1.5 ${
+            showFavoritesOnly ? 'chip-active' : 'bg-white/70 text-[#6b5648] border-[#e8d9c8] hover:border-[var(--color-copper)]/40'
+          }`}
+        >
+          <Heart className={`w-3.5 h-3.5 ${showFavoritesOnly ? 'fill-current' : ''}`} />
+          我的喜歡{favoriteIds.length > 0 ? ` ${favoriteIds.length}` : ''}
+        </button>
         {['全部', ...cats].map((c) => (
-          <button key={c} onClick={() => { setCategory(c); setSubCategory('全部'); }}
+          <button key={c} type="button" onClick={() => { setCategory(c); setSubCategory('全部'); setShowFavoritesOnly(false); }}
             className={`chip whitespace-nowrap px-4 py-2.5 text-sm font-bold border ${
-              category === c ? 'chip-active' : 'bg-white/70 text-[#6b5648] border-[#e8d9c8] hover:border-[var(--color-copper)]/40'
+              !showFavoritesOnly && category === c ? 'chip-active' : 'bg-white/70 text-[#6b5648] border-[#e8d9c8] hover:border-[var(--color-copper)]/40'
             }`}>{c}</button>
         ))}
       </div>
@@ -224,7 +259,7 @@ export default function Storefront() {
       {subCats.length > 0 && category !== '全部' && (
         <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide">
           {['全部', ...subCats].map((sc) => (
-            <button key={sc} onClick={() => setSubCategory(sc)}
+            <button key={sc} type="button" onClick={() => setSubCategory(sc)}
               className={`chip whitespace-nowrap px-3 py-1.5 text-xs font-bold border ${
                 subCategory === sc ? 'chip-active' : 'bg-[#f3ebe1] text-[#6b5648] border-transparent'
               }`}>{sc}</button>
@@ -237,7 +272,7 @@ export default function Storefront() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 surface-warm rounded-2xl border-dashed"><p className="font-display font-bold text-[#5c4a3d]">找不到商品</p></div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{filtered.map((p) => <ProductCard key={p.id} p={p} />)}</div>
+        <div className={gridClass}>{filtered.map((p) => <ProductCard key={p.id} p={p} />)}</div>
       )}
 
       {cart.length > 0 && (
@@ -252,16 +287,7 @@ export default function Storefront() {
         </div>
       )}
 
-      {showTop && (
-        <button
-          type="button"
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-36 md:bottom-24 right-4 z-40 w-11 h-11 rounded-xl bg-white/95 border border-[#eadfce] text-[var(--color-ink)] flex items-center justify-center shadow-md hover:bg-[#f6efe6]"
-          aria-label="回到頂部"
-        >
-          <ArrowUp className="w-5 h-5" />
-        </button>
-      )}
+      <ProductDetailModal product={detailProduct} onClose={() => setDetailProduct(null)} />
     </div>
   );
 }

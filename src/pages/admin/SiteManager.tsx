@@ -6,11 +6,14 @@ import { PAGE_TEXT_FIELDS } from '../../lib/pageTexts';
 import { CarouselSlide } from '../../types';
 import {
   Layout, Image, Type, GripVertical, Plus, Trash2, ChevronUp, ChevronDown,
-  Check, Loader2, Star, Music, Save, Eye,
+  Check, Loader2, Star, Music, Save, Eye, ImagePlus, Scaling,
 } from 'lucide-react';
+import { CARD_SIZE_PRESETS, CardSizeId } from '../../types';
+import { fileToBase64Hero } from '../../lib/imageUpload';
 
 const SECTIONS = [
   { id: 'carousel', label: '首頁輪播', icon: Image, color: 'from-amber-500 to-orange-500' },
+  { id: 'sizes', label: '卡片尺寸', icon: Scaling, color: 'from-rose-500 to-orange-600' },
   { id: 'texts', label: '前台文案', icon: Type, color: 'from-blue-500 to-indigo-500' },
   { id: 'categories', label: '分類排序', icon: Layout, color: 'from-emerald-500 to-teal-500' },
   { id: 'store', label: '店家資訊', icon: Star, color: 'from-purple-500 to-pink-500' },
@@ -24,6 +27,7 @@ export default function SiteManager() {
   const [saved, setSaved] = useState(false);
   const [dragCat, setDragCat] = useState<string | null>(null);
   const [dragSlide, setDragSlide] = useState<number | null>(null);
+  const [uploadErr, setUploadErr] = useState('');
 
   useEffect(() => { setSettings(getSettingsSnapshot()); }, []);
 
@@ -34,6 +38,16 @@ export default function SiteManager() {
     setLoading(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+  };
+
+  const uploadSlideImage = async (idx: number, file: File) => {
+    setUploadErr('');
+    try {
+      const base64 = await fileToBase64Hero(file);
+      updateSlide(idx, 'image', base64);
+    } catch (e: any) {
+      setUploadErr(e.message || '上傳失敗');
+    }
   };
 
   const updateSlide = (idx: number, field: keyof CarouselSlide, val: string) => {
@@ -95,7 +109,8 @@ export default function SiteManager() {
         {active === 'carousel' && (
           <div className="space-y-4">
             <h2 className="font-black text-lg text-stone-900">首頁輪播幻燈片</h2>
-            <p className="text-xs text-stone-500">拖曳 ≡ 可調整順序，點 + 新增一頁</p>
+            <p className="text-xs text-stone-500">可直接上傳照片，或貼圖片網址。拖曳 ≡ 調整順序</p>
+            {uploadErr && <p className="text-xs text-red-600 font-bold">{uploadErr}</p>}
             {(settings.carousel || []).map((slide, idx) => (
               <div key={idx} draggable onDragStart={() => setDragSlide(idx)} onDragOver={(e) => e.preventDefault()}
                 onDrop={() => { if (dragSlide !== null && dragSlide !== idx) reorderSlides(dragSlide, idx); setDragSlide(null); }}
@@ -104,23 +119,80 @@ export default function SiteManager() {
                   <GripVertical className="w-4 h-4 text-stone-300 cursor-grab" />
                   <span className="text-xs font-bold text-stone-400">第 {idx + 1} 頁</span>
                   <div className="ml-auto flex gap-1">
-                    <button onClick={() => reorderSlides(idx, idx - 1)} disabled={idx === 0} className="p-1 text-stone-400 disabled:opacity-20"><ChevronUp className="w-4 h-4" /></button>
-                    <button onClick={() => reorderSlides(idx, idx + 1)} disabled={idx === (settings.carousel?.length || 0) - 1} className="p-1 text-stone-400 disabled:opacity-20"><ChevronDown className="w-4 h-4" /></button>
-                    <button onClick={() => setSettings({ ...settings, carousel: (settings.carousel || []).filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-4 h-4" /></button>
+                    <button type="button" onClick={() => reorderSlides(idx, idx - 1)} disabled={idx === 0} className="p-1 text-stone-400 disabled:opacity-20"><ChevronUp className="w-4 h-4" /></button>
+                    <button type="button" onClick={() => reorderSlides(idx, idx + 1)} disabled={idx === (settings.carousel?.length || 0) - 1} className="p-1 text-stone-400 disabled:opacity-20"><ChevronDown className="w-4 h-4" /></button>
+                    <button type="button" onClick={() => setSettings({ ...settings, carousel: (settings.carousel || []).filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
+                {slide.image && (
+                  <img src={slide.image} alt="" className="w-full h-36 object-cover rounded-xl border border-stone-200" />
+                )}
                 <input placeholder="標題" value={slide.title} onChange={(e) => updateSlide(idx, 'title', e.target.value)}
                   className="w-full bg-white border border-stone-200 rounded-lg p-2.5 text-sm font-bold" />
                 <input placeholder="副標題" value={slide.subtitle} onChange={(e) => updateSlide(idx, 'subtitle', e.target.value)}
                   className="w-full bg-white border border-stone-200 rounded-lg p-2.5 text-sm" />
-                <input placeholder="圖片網址（選填）" value={slide.image} onChange={(e) => updateSlide(idx, 'image', e.target.value)}
+                <label className="flex items-center gap-2 text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 cursor-pointer w-fit">
+                  <ImagePlus className="w-4 h-4" />上傳照片
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && uploadSlideImage(idx, e.target.files[0])} />
+                </label>
+                <input placeholder="或貼上圖片網址（選填）" value={slide.image?.startsWith('data:') ? '' : (slide.image || '')}
+                  onChange={(e) => updateSlide(idx, 'image', e.target.value)}
                   className="w-full bg-white border border-stone-200 rounded-lg p-2.5 text-xs font-mono" />
+                {slide.image?.startsWith('data:') && (
+                  <button type="button" onClick={() => updateSlide(idx, 'image', '')} className="text-xs text-red-600 font-bold">清除已上傳圖片</button>
+                )}
               </div>
             ))}
-            <button onClick={() => setSettings({ ...settings, carousel: [...(settings.carousel || []), { image: '', title: '', subtitle: '' }] })}
+            <button type="button" onClick={() => setSettings({ ...settings, carousel: [...(settings.carousel || []), { image: '', title: '', subtitle: '' }] })}
               className="flex items-center gap-2 text-sm font-bold text-amber-600 hover:text-amber-700">
               <Plus className="w-4 h-4" />新增輪播頁
             </button>
+          </div>
+        )}
+
+        {active === 'sizes' && (
+          <div className="space-y-5">
+            <div>
+              <h2 className="font-black text-lg text-stone-900">菜單商品卡片尺寸</h2>
+              <p className="text-xs text-stone-500 mt-1">共 4 種尺寸，依「大類」統一套用，不用一個一個商品調</p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {CARD_SIZE_PRESETS.map((p) => (
+                <div key={p.id} className="bg-stone-50 rounded-xl p-3 border border-stone-100 text-center">
+                  <div className="mx-auto bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg mb-2" style={{ height: Math.round(p.imageHeight / 3), width: '100%' }} />
+                  <p className="font-black text-stone-800">{p.id} · {p.label}</p>
+                  <p className="text-[10px] text-stone-400">圖高 {p.imageHeight}px</p>
+                </div>
+              ))}
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-stone-700 mb-2">預設尺寸（未指定大類時）</label>
+              <select
+                value={settings.defaultCardSize || 'M'}
+                onChange={(e) => setSettings({ ...settings, defaultCardSize: e.target.value as CardSizeId })}
+                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-sm font-bold"
+              >
+                {CARD_SIZE_PRESETS.map((p) => <option key={p.id} value={p.id}>{p.id} · {p.label}</option>)}
+              </select>
+            </div>
+            <div className="space-y-3">
+              <p className="text-sm font-bold text-stone-800">各大類尺寸</p>
+              {(settings.categoryOrder || []).map((cat) => (
+                <div key={cat} className="flex items-center gap-3 bg-stone-50 rounded-xl p-3">
+                  <span className="font-bold text-stone-800 w-24 shrink-0">{cat}</span>
+                  <select
+                    value={settings.categoryCardSizes?.[cat] || settings.defaultCardSize || 'M'}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      categoryCardSizes: { ...(settings.categoryCardSizes || {}), [cat]: e.target.value as CardSizeId },
+                    })}
+                    className="flex-1 bg-white border border-stone-200 rounded-lg p-2 text-sm font-bold"
+                  >
+                    {CARD_SIZE_PRESETS.map((p) => <option key={p.id} value={p.id}>{p.id} · {p.label}（圖高 {p.imageHeight}px）</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -194,6 +266,10 @@ export default function SiteManager() {
               <input type="range" min="90" max="150" step="5" value={settings.textScale || 110}
                 onChange={(e) => setSettings({ ...settings, textScale: Number(e.target.value) })}
                 className="w-full accent-amber-600" />
+            </div>
+            <div className="rounded-xl bg-amber-50 border border-amber-100 p-3 text-xs text-amber-900 leading-relaxed">
+              <p className="font-bold mb-1">登入方式</p>
+              <p>目前支援信箱註冊／登入，以及 Google、Facebook、Yahoo。聯絡用 LINE 連結請在上方填寫。</p>
             </div>
           </div>
         )}

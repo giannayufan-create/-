@@ -47,6 +47,7 @@ export function buildFallbackProfile(authUser: User): UserProfile {
     region: '其他',
     level: '一般',
     points: 0,
+    favorites: [],
     isProfileComplete: isAdmin,
     provider: authUser.providerData[0]?.providerId || 'password',
     createdAt: now,
@@ -74,6 +75,7 @@ export async function ensureUserProfile(authUser: User): Promise<UserProfile> {
       region: '其他',
       level: '一般',
       points: 0,
+      favorites: [],
       isProfileComplete: false,
       provider,
       createdAt: now,
@@ -94,6 +96,8 @@ export async function ensureUserProfile(authUser: User): Promise<UserProfile> {
     ...data,
     uid: authUser.uid,
     email: data.email || authUser.email || '',
+    phone: data.phone || '',
+    favorites: Array.isArray(data.favorites) ? data.favorites : [],
     role,
     isProfileComplete,
   };
@@ -115,6 +119,18 @@ export async function ensureUserProfile(authUser: User): Promise<UserProfile> {
 
   cacheUserProfile(profile);
   return profile;
+}
+
+export async function toggleFavorite(uid: string, productId: string, current: string[]): Promise<string[]> {
+  const set = new Set(current || []);
+  if (set.has(productId)) set.delete(productId);
+  else set.add(productId);
+  const favorites = Array.from(set);
+  const userRef = doc(db, 'users', uid);
+  const now = new Date().toISOString();
+  await ensureFirestoreOnline();
+  await updateDoc(userRef, { favorites, updatedAt: now });
+  return favorites;
 }
 
 export async function updateUserProfile(
@@ -145,6 +161,7 @@ export async function updateUserProfile(
         region: extractRegion(updates.shippingAddress || ''),
         level: '一般',
         points: 0,
+        favorites: [],
         isProfileComplete: true,
         provider: 'password',
         createdAt: now,
@@ -156,7 +173,7 @@ export async function updateUserProfile(
     }
 
     await updateDoc(userRef, payload);
-    const updated = { ...(snap.data() as UserProfile), ...payload };
+    const updated = { ...(snap.data() as UserProfile), ...payload, favorites: (snap.data() as UserProfile).favorites || [] };
     cacheUserProfile(updated);
     return updated;
   } catch (e) {

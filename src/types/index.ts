@@ -14,6 +14,8 @@ export interface UserProfile {
   region: string;
   level: MemberLevel;
   points: number;
+  /** 收藏／喜歡的商品 ID */
+  favorites: string[];
   isProfileComplete: boolean;
   provider: string;
   createdAt: string;
@@ -66,6 +68,23 @@ export interface CarouselSlide {
   subtitle: string;
 }
 
+/** 前台商品卡片尺寸（4 種，依大類統一套用） */
+export type CardSizeId = 'S' | 'M' | 'L' | 'XL';
+
+export interface CardSizePreset {
+  id: CardSizeId;
+  label: string;
+  imageHeight: number; // px
+  titleSize: string;
+}
+
+export const CARD_SIZE_PRESETS: CardSizePreset[] = [
+  { id: 'S', label: '小', imageHeight: 120, titleSize: '13px' },
+  { id: 'M', label: '中', imageHeight: 160, titleSize: '15px' },
+  { id: 'L', label: '大', imageHeight: 200, titleSize: '16px' },
+  { id: 'XL', label: '特大', imageHeight: 240, titleSize: '17px' },
+];
+
 export interface SiteSettings {
   storeName: string;
   storePhone: string;
@@ -86,6 +105,10 @@ export interface SiteSettings {
   footerText: string;
   categoryOrder: string[];
   subCategories: Record<string, string[]>;
+  /** 各大類對應的卡片尺寸 */
+  categoryCardSizes: Record<string, CardSizeId>;
+  /** 未指定大類時的預設尺寸 */
+  defaultCardSize: CardSizeId;
   pageTexts: PageTexts;
 }
 

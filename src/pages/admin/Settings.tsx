@@ -4,9 +4,10 @@ import { db } from '../../lib/firebase';
 import { mergeSettings, setSettingsCache } from '../../lib/useSettings';
 import { getSettingsSnapshot } from '../../lib/settingsCache';
 import { PAGE_TEXT_FIELDS } from '../../lib/pageTexts';
-import { Check, Loader2, Mail, ChevronUp, ChevronDown, Plus, Trash2, Image, X, Type, ExternalLink, Music, Send, GripVertical } from 'lucide-react';
+import { Check, Loader2, Mail, ChevronUp, ChevronDown, Plus, Trash2, Image, X, Type, ExternalLink, Music, Send, GripVertical, ImagePlus } from 'lucide-react';
 import { testOrderEmail } from '../../lib/orderNotify';
 import { CarouselSlide } from '../../types';
+import { fileToBase64Hero } from '../../lib/imageUpload';
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState(() => getSettingsSnapshot());
@@ -16,6 +17,7 @@ export default function AdminSettings() {
   const [testingEmail, setTestingEmail] = useState(false);
   const [emailTestResult, setEmailTestResult] = useState('');
   const [dragCat, setDragCat] = useState<string | null>(null);
+  const [uploadErr, setUploadErr] = useState('');
 
   useEffect(() => {
     setSettings(getSettingsSnapshot());
@@ -90,6 +92,16 @@ export default function AdminSettings() {
 
   const removeSlide = (idx: number) => {
     setSettings({ ...settings, carousel: (settings.carousel || []).filter((_, i) => i !== idx) });
+  };
+
+  const uploadSlideImage = async (idx: number, file: File) => {
+    setUploadErr('');
+    try {
+      const base64 = await fileToBase64Hero(file);
+      updateSlide(idx, 'image', base64);
+    } catch (e: any) {
+      setUploadErr(e.message || '上傳失敗');
+    }
   };
 
   return (
@@ -185,18 +197,25 @@ export default function AdminSettings() {
 
       <section className="bg-white rounded-2xl border border-stone-200 p-6 space-y-4">
         <h3 className="font-bold text-stone-800 flex items-center gap-2"><Image className="w-4 h-4 text-amber-600" />首頁輪播幻燈片</h3>
+        <p className="text-xs text-stone-500">可直接上傳照片，或貼圖片網址（建議至「前台管理」操作）</p>
+        {uploadErr && <p className="text-xs text-red-600 font-bold">{uploadErr}</p>}
         {(settings.carousel || []).map((slide, idx) => (
           <div key={idx} className="bg-stone-50 rounded-xl p-4 space-y-2 relative">
-            <button onClick={() => removeSlide(idx)} className="absolute top-2 right-2 text-stone-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+            <button type="button" onClick={() => removeSlide(idx)} className="absolute top-2 right-2 text-stone-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+            {slide.image && <img src={slide.image} alt="" className="w-full h-32 object-cover rounded-lg border border-stone-200" />}
             <input placeholder="標題" value={slide.title} onChange={(e) => updateSlide(idx, 'title', e.target.value)}
               className="w-full bg-white border border-stone-200 rounded-lg p-2 text-sm" />
             <input placeholder="副標題" value={slide.subtitle} onChange={(e) => updateSlide(idx, 'subtitle', e.target.value)}
               className="w-full bg-white border border-stone-200 rounded-lg p-2 text-sm" />
-            <input placeholder="圖片網址（選填）" value={slide.image} onChange={(e) => updateSlide(idx, 'image', e.target.value)}
+            <label className="inline-flex items-center gap-2 text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 cursor-pointer">
+              <ImagePlus className="w-4 h-4" />上傳照片
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && uploadSlideImage(idx, e.target.files[0])} />
+            </label>
+            <input placeholder="或貼上圖片網址（選填）" value={slide.image?.startsWith('data:') ? '' : (slide.image || '')} onChange={(e) => updateSlide(idx, 'image', e.target.value)}
               className="w-full bg-white border border-stone-200 rounded-lg p-2 text-sm font-mono text-xs" />
           </div>
         ))}
-        <button onClick={addSlide} className="flex items-center gap-2 text-sm font-bold text-amber-600 hover:text-amber-700">
+        <button type="button" onClick={addSlide} className="flex items-center gap-2 text-sm font-bold text-amber-600 hover:text-amber-700">
           <Plus className="w-4 h-4" />新增輪播頁
         </button>
       </section>

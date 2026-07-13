@@ -10,13 +10,15 @@ import AuthLoadingOverlay from './AuthLoadingOverlay';
 import { ShoppingCart, User, LogOut, LayoutDashboard, Package, Store } from 'lucide-react';
 import SiteFooter from './SiteFooter';
 import BackgroundMusic from './BackgroundMusic';
+import ContactModal from './ContactModal';
+import FloatingDock from './FloatingDock';
 import { useSiteSettings } from '../lib/useSettings';
 import { ensureSettingsLoaded, loadSettings } from '../lib/settingsCache';
 
 interface LayoutProps { adminMode?: boolean }
 
 export default function Layout({ adminMode }: LayoutProps) {
-  const { user, userRole, setUser, setAuthLoading, setSigningIn, setProfileReady, cart, cartPulse, clearCartPulse, setAuthModalOpen, setProfileModalOpen } = useStore();
+  const { user, userRole, setUser, setAuthLoading, setSigningIn, setProfileReady, cart, cartPulse, clearCartPulse, setAuthModalOpen, setProfileModalOpen, setContactOpen } = useStore();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 16 });
@@ -163,6 +165,9 @@ export default function Layout({ adminMode }: LayoutProps) {
 
           <nav className="hidden md:flex items-center gap-8">
             <Link to="/" className="text-sm font-medium text-[#5c4a3d] hover:text-[var(--color-copper)] transition-colors">{texts.navMenu}</Link>
+            <button type="button" onClick={() => setContactOpen(true)} className="text-sm font-medium text-[#5c4a3d] hover:text-[var(--color-copper)] transition-colors">
+              聯絡我們
+            </button>
             {user && userRole !== 'admin' && <Link to="/orders" className="text-sm font-medium text-[#5c4a3d] hover:text-[var(--color-copper)] transition-colors">{texts.navOrders}</Link>}
             {user && userRole === 'admin' && <Link to="/admin" className="text-sm font-medium text-[#5c4a3d] hover:text-[var(--color-copper)] transition-colors">{texts.navAdmin}</Link>}
           </nav>
@@ -203,8 +208,9 @@ export default function Layout({ adminMode }: LayoutProps) {
       </main>
 
       <SiteFooter />
-
-      {!adminMode && <BackgroundMusic />}
+      <ContactModal />
+      <FloatingDock />
+      <BackgroundMusic />
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#faf6f1]/95 backdrop-blur-md border-t border-[#e8d9c8] flex z-40">
         {[

@@ -37,6 +37,9 @@ interface AppState {
   isProfileModalOpen: boolean;
   isProfileReady: boolean;
   cartPulse: boolean;
+  isContactOpen: boolean;
+  isSearchOpen: boolean;
+  menuSearch: string;
   setUser: (user: User | null, role: UserRole | null, token: string | null, userData?: UserProfile | null) => void;
   setAuthLoading: (isLoading: boolean) => void;
   setSigningIn: (isSigningIn: boolean) => void;
@@ -48,6 +51,9 @@ interface AppState {
   setProfileModalOpen: (isOpen: boolean) => void;
   setProfileReady: (ready: boolean) => void;
   clearCartPulse: () => void;
+  setContactOpen: (open: boolean) => void;
+  setSearchOpen: (open: boolean) => void;
+  setMenuSearch: (q: string) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -63,6 +69,9 @@ export const useStore = create<AppState>((set) => ({
   isProfileModalOpen: false,
   isProfileReady: false,
   cartPulse: false,
+  isContactOpen: false,
+  isSearchOpen: false,
+  menuSearch: '',
   setUser: (user, role, token, userData) =>
     set({ user, userRole: role, accessToken: token, userData: userData ?? null, isAuthLoading: false, isSigningIn: false }),
   setAuthLoading: (isLoading) => set({ isAuthLoading: isLoading }),
@@ -101,4 +110,7 @@ export const useStore = create<AppState>((set) => ({
   setProfileModalOpen: (isOpen) => set({ isProfileModalOpen: isOpen }),
   setProfileReady: (ready) => set({ isProfileReady: ready }),
   clearCartPulse: () => set({ cartPulse: false }),
+  setContactOpen: (open) => set({ isContactOpen: open }),
+  setSearchOpen: (open) => set({ isSearchOpen: open }),
+  setMenuSearch: (q) => set({ menuSearch: q }),
 }));

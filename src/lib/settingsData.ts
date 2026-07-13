@@ -17,5 +17,7 @@ export function mergeSettings(data?: Partial<AppSettings>): AppSettings {
     carousel: data?.carousel?.length ? data.carousel : DEFAULT_SETTINGS.carousel,
     categoryOrder: data?.categoryOrder?.length ? data.categoryOrder : DEFAULT_SETTINGS.categoryOrder,
     subCategories: data?.subCategories || DEFAULT_SETTINGS.subCategories,
+    categoryCardSizes: { ...DEFAULT_SETTINGS.categoryCardSizes, ...data?.categoryCardSizes },
+    defaultCardSize: data?.defaultCardSize || DEFAULT_SETTINGS.defaultCardSize,
   };
 }

@@ -27,14 +27,14 @@ export default function ProfileSetup() {
   useEffect(() => {
     if (!userData) return;
     setForm({
-      name: userData.name || '',
+      name: userData.name || user?.displayName || '',
       phone: userData.phone || '',
       billingAddress: userData.billingAddress || '',
       shippingAddress: userData.shippingAddress || '',
     });
     setFieldErrors({});
     setGeneralError('');
-  }, [userData, isProfileModalOpen]);
+  }, [userData, user, isProfileModalOpen]);
 
   const updateField = (key: keyof ProfileForm, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));

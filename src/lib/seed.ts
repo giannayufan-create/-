@@ -38,4 +38,10 @@ export const DEFAULT_SETTINGS = {
   footerText: '感謝您的支持！送貨新竹以北，不限金額配送。如有問題歡迎 LINE 聯繫我們！',
   categoryOrder: ['火鍋料', '水餃', '滷味'],
   subCategories: DEFAULT_SUB_CATEGORIES,
+  defaultCardSize: 'M' as const,
+  categoryCardSizes: {
+    '火鍋料': 'M',
+    '水餃': 'L',
+    '滷味': 'M',
+  } as Record<string, 'S' | 'M' | 'L' | 'XL'>,
 };
