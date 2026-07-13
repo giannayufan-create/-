@@ -155,7 +155,7 @@ export default function Cart() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto w-full pb-28">
+    <div className="max-w-2xl mx-auto w-full">
       <div className="flex items-end justify-between mb-3">
         <h1 className="font-display text-xl font-bold text-[var(--color-ink)] tracking-wide">{texts.cartTitle}</h1>
         {cart.length > 0 && (
@@ -235,10 +235,7 @@ export default function Cart() {
             )}
 
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-[11px] font-bold text-stone-400">配送方式 *</p>
-                <p className="text-[10px] text-stone-400">本人親自送達</p>
-              </div>
+              <p className="text-[11px] font-bold text-stone-400 mb-1.5">配送方式 *</p>
               <div className="flex flex-wrap gap-1.5">
                 {deliveryOptions.map((opt) => (
                   <button
@@ -299,23 +296,21 @@ export default function Cart() {
             </div>
           </div>
 
-          {/* 底部固定結帳列，不用一直往下找按鈕 */}
-          <div className="fixed bottom-16 md:bottom-4 left-0 right-0 z-40 px-3 pointer-events-none">
-            <div className="max-w-2xl mx-auto pointer-events-auto surface-warm border border-[#eadfce] rounded-2xl shadow-[0_12px_40px_-12px_rgba(28,20,16,0.35)] p-3.5">
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <div>
-                  <p className="text-[10px] text-[#9a8674]">{texts.checkoutNote || '結帳後商家會盡速為您安排送貨'}</p>
-                  <p className="font-display text-2xl font-bold text-[var(--color-copper)] leading-tight">${cartTotal.toFixed(0)}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={checkout}
-                  disabled={checking || oversold || !deliveryDate || !deliveryTime || !paymentMethod || !deliveryMethod}
-                  className="btn-ink font-bold px-5 py-3 rounded-xl flex items-center gap-2 disabled:opacity-40 shrink-0 text-sm"
-                >
-                  {checking ? <><Loader2 className="w-4 h-4 animate-spin" />處理中</> : <><span>{texts.checkoutBtn}</span><ArrowRight className="w-4 h-4" /></>}
-                </button>
+          {/* 結帳區塊跟著內容走，不用 fixed，避免捲動版面錯位 */}
+          <div className="surface-warm border border-[#eadfce] rounded-2xl p-3.5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[10px] text-[#9a8674] leading-snug">{texts.checkoutNote || '結帳後商家會盡速為您安排送貨'}</p>
+                <p className="font-display text-2xl font-bold text-[var(--color-copper)] leading-tight mt-0.5">${cartTotal.toFixed(0)}</p>
               </div>
+              <button
+                type="button"
+                onClick={checkout}
+                disabled={checking || oversold || !deliveryDate || !deliveryTime || !paymentMethod || !deliveryMethod}
+                className="btn-ink font-bold px-5 py-3 rounded-xl flex items-center gap-2 disabled:opacity-40 shrink-0 text-sm"
+              >
+                {checking ? <><Loader2 className="w-4 h-4 animate-spin" />處理中</> : <><span>{texts.checkoutBtn}</span><ArrowRight className="w-4 h-4" /></>}
+              </button>
             </div>
           </div>
         </>
