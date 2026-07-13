@@ -3,7 +3,8 @@ import { collection, onSnapshot, query, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useStore } from '../lib/store';
 import AdminPreviewBar from '../components/AdminPreviewBar';
-import { Plus, Minus, Search, Star, TrendingUp } from 'lucide-react';
+import { Plus, Minus, Search, Star, TrendingUp, ShoppingCart, ArrowUp } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Carousel from '../components/Carousel';
 import { MAIN_CATEGORIES } from '../types';
 import { useSiteSettings } from '../lib/useSettings';
@@ -23,8 +24,15 @@ export default function Storefront() {
   const [search, setSearch] = useState('');
   const [toast, setToast] = useState('');
   const [pickQtys, setPickQtys] = useState<Record<string, number>>({});
-  const { addToCart, cart, userRole } = useStore();
+  const { addToCart, cart, cartTotal, userRole } = useStore();
   const { settings, texts } = useSiteSettings();
+  const [showTop, setShowTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     const u1 = onSnapshot(query(collection(db, 'products')), (s) => {
@@ -79,7 +87,15 @@ export default function Storefront() {
       return;
     }
     addToCart({ productId: p.id, name: p.name, price: p.price, quantity: pickQty });
+    setPickQtys((prev) => ({ ...prev, [p.id]: 1 }));
     showToast(texts.addSuccess);
+  };
+
+  const clampQty = (p: any, raw: number) => {
+    const inCart = cart.find((i) => i.productId === p.id)?.quantity || 0;
+    const max = Math.max(0, p.stock - inCart);
+    if (!Number.isFinite(raw) || raw < 1) return 1;
+    return Math.min(raw, Math.max(1, max));
   };
 
   const ProductCard = ({ p }: { p: any }) => {
@@ -130,8 +146,16 @@ export default function Storefront() {
                 <span className="text-xs font-bold text-[#6b5648]">{texts.quantityLabel}</span>
                 <div className="flex items-center gap-1 bg-[#f3ebe1] rounded-xl p-1">
                   <button type="button" onClick={() => setPickQty(p.id, Math.max(1, pickQty - 1))} className="w-9 h-9 flex items-center justify-center bg-white rounded-lg text-[#5c4a3d]"><Minus className="w-4 h-4" /></button>
-                  <span className="w-8 text-center font-black text-sm text-[var(--color-ink)]">{pickQty}</span>
-                  <button type="button" disabled={pickQty >= maxPick} onClick={() => setPickQty(p.id, pickQty + 1)} className="w-9 h-9 flex items-center justify-center bg-white rounded-lg text-[#5c4a3d] disabled:opacity-30"><Plus className="w-4 h-4" /></button>
+                  <input
+                    type="number"
+                    min={1}
+                    max={Math.max(1, maxPick)}
+                    value={pickQty}
+                    onChange={(e) => setPickQty(p.id, clampQty(p, Number(e.target.value)))}
+                    onBlur={() => setPickQty(p.id, clampQty(p, pickQty))}
+                    className="w-12 text-center font-black text-sm text-[var(--color-ink)] bg-white rounded-lg border border-[#eadfce] py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-copper)]/30"
+                  />
+                  <button type="button" disabled={pickQty >= maxPick} onClick={() => setPickQty(p.id, Math.min(maxPick, pickQty + 1))} className="w-9 h-9 flex items-center justify-center bg-white rounded-lg text-[#5c4a3d] disabled:opacity-30"><Plus className="w-4 h-4" /></button>
                 </div>
               </div>
             )}
@@ -214,6 +238,29 @@ export default function Storefront() {
         <div className="text-center py-20 surface-warm rounded-2xl border-dashed"><p className="font-display font-bold text-[#5c4a3d]">找不到商品</p></div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{filtered.map((p) => <ProductCard key={p.id} p={p} />)}</div>
+      )}
+
+      {cart.length > 0 && (
+        <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-md">
+          <Link to="/cart" className="flex items-center justify-between gap-3 bg-[var(--color-ink)] text-white rounded-2xl px-5 py-3.5 shadow-[0_16px_40px_-12px_rgba(28,20,16,0.5)]">
+            <span className="flex items-center gap-2 font-bold text-sm">
+              <ShoppingCart className="w-4 h-4 text-[var(--color-ember)]" />
+              購物車 {cart.reduce((s, i) => s + i.quantity, 0)} 件
+            </span>
+            <span className="font-display font-bold text-[#f0d2b0]">${cartTotal.toFixed(0)} · 去結帳</span>
+          </Link>
+        </div>
+      )}
+
+      {showTop && (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-36 md:bottom-24 right-4 z-40 w-11 h-11 rounded-xl bg-white/95 border border-[#eadfce] text-[var(--color-ink)] flex items-center justify-center shadow-md hover:bg-[#f6efe6]"
+          aria-label="回到頂部"
+        >
+          <ArrowUp className="w-5 h-5" />
+        </button>
       )}
     </div>
   );

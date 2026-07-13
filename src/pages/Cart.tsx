@@ -139,7 +139,19 @@ export default function Cart() {
                   </div>
                   <div className="flex items-center gap-1 bg-stone-100 rounded-xl p-1">
                     <button onClick={() => updateQuantity(item.productId, Math.max(1, item.quantity - 1))} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white"><Minus className="w-3.5 h-3.5" /></button>
-                    <span className="w-6 text-center font-bold text-sm">{item.quantity}</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={Math.max(1, stock)}
+                      value={item.quantity}
+                      disabled={soldOut}
+                      onChange={(e) => {
+                        const n = Math.floor(Number(e.target.value));
+                        if (!Number.isFinite(n)) return;
+                        updateQuantity(item.productId, Math.min(Math.max(1, n), Math.max(1, stock)));
+                      }}
+                      className="w-12 text-center font-bold text-sm bg-white rounded-lg border border-stone-200 py-1 focus:outline-none focus:ring-2 focus:ring-amber-400/40 disabled:opacity-40"
+                    />
                     <button disabled={soldOut || item.quantity >= stock} onClick={() => updateQuantity(item.productId, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white disabled:opacity-30"><Plus className="w-3.5 h-3.5" /></button>
                   </div>
                   <p className="font-bold text-stone-800 w-16 text-right">${(item.price * item.quantity).toFixed(0)}</p>
