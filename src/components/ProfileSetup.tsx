@@ -4,7 +4,7 @@ import { useStore } from '../lib/store';
 import { updateUserProfile, applyLocalProfile, cacheUserProfile } from '../lib/users';
 import { useSiteSettings } from '../lib/useSettings';
 import { isOfflineError } from '../lib/firestoreConnect';
-import { validateProfileForm, ProfileFieldErrors, ProfileForm } from '../lib/validateProfile';
+import { validateProfileForm, ProfileFieldErrors, ProfileForm, normalizePhoneInput } from '../lib/validateProfile';
 
 const FIELDS = [
   { key: 'name' as const, label: '姓名或店名', placeholder: '例如：王小明 / XX餐廳', required: true },
@@ -37,12 +37,13 @@ export default function ProfileSetup() {
   }, [userData, user, isProfileModalOpen]);
 
   const updateField = (key: keyof ProfileForm, value: string) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    const next = key === 'phone' ? normalizePhoneInput(value) : value;
+    setForm((prev) => ({ ...prev, [key]: next }));
     if (fieldErrors[key]) {
       setFieldErrors((prev) => {
-        const next = { ...prev };
-        delete next[key];
-        return next;
+        const n = { ...prev };
+        delete n[key];
+        return n;
       });
     }
   };
@@ -121,7 +122,9 @@ export default function ProfileSetup() {
                 value={form[f.key]}
                 onChange={(e) => updateField(f.key, e.target.value)}
                 placeholder={f.placeholder}
-                className={`w-full bg-stone-50 border rounded-xl p-3 text-sm focus:ring-2 focus:outline-none transition-colors ${
+                inputMode={f.key === 'phone' ? 'numeric' : undefined}
+                autoComplete={f.key === 'phone' ? 'tel' : f.key === 'name' ? 'name' : 'street-address'}
+                className={`w-full bg-stone-50 border rounded-xl p-3 text-sm focus:ring-2 focus:outline-none transition-colors min-h-11 ${
                   fieldErrors[f.key]
                     ? 'border-red-400 focus:ring-red-300 bg-red-50/50'
                     : 'border-stone-200 focus:ring-amber-400'

@@ -237,7 +237,7 @@ export default function Storefront() {
         </div>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-3 scrollbar-hide">
+      <div className="flex gap-2 overflow-x-auto pb-2 mb-3 scrollbar-hide touch-scroll">
         <button
           type="button"
           onClick={() => setShowFavoritesOnly((v) => !v)}

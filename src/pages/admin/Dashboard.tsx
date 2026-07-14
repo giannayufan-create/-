@@ -127,7 +127,7 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-4">
         <div>
           <h1 className="font-display text-2xl font-bold text-[var(--color-ink)] mb-1">總覽儀表板</h1>
           <p className="text-sm text-[#7a6555]">當月銷售狀況與營運一覽</p>
@@ -145,6 +145,26 @@ export default function AdminDashboard() {
             ))}
           </select>
         </div>
+      </div>
+
+      {/* 快捷入口 */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+        <Link to="/admin/orders" className="surface-warm rounded-xl px-3 py-3 hover:border-[var(--color-copper)]/40 transition-colors">
+          <p className="text-[10px] font-bold text-[#9a8674]">待處理訂單</p>
+          <p className="text-lg font-black text-[var(--color-ink)]">{pending} <span className="text-xs font-bold text-[var(--color-copper)]">去處理 →</span></p>
+        </Link>
+        <Link to="/admin/products" className="surface-warm rounded-xl px-3 py-3 hover:border-[var(--color-copper)]/40 transition-colors">
+          <p className="text-[10px] font-bold text-[#9a8674]">商品管理</p>
+          <p className="text-lg font-black text-[var(--color-ink)]">{products.length} <span className="text-xs font-bold text-[var(--color-copper)]">去編輯 →</span></p>
+        </Link>
+        <Link to="/admin/site" className="surface-warm rounded-xl px-3 py-3 hover:border-[var(--color-copper)]/40 transition-colors">
+          <p className="text-[10px] font-bold text-[#9a8674]">前台管理</p>
+          <p className="text-sm font-black text-[var(--color-ink)] mt-1">輪播／結帳設定 →</p>
+        </Link>
+        <Link to="/admin/members" className="surface-warm rounded-xl px-3 py-3 hover:border-[var(--color-copper)]/40 transition-colors">
+          <p className="text-[10px] font-bold text-[#9a8674]">會員</p>
+          <p className="text-lg font-black text-[var(--color-ink)]">{members.length} <span className="text-xs font-bold text-[var(--color-copper)]">查看 →</span></p>
+        </Link>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

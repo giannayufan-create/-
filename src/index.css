@@ -15,12 +15,31 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   background-color: var(--color-mist);
   color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* 手機觸控與安全區 */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+.tap-target {
+  min-height: 44px;
+  min-width: 44px;
 }
 
 .font-display {
@@ -137,16 +156,22 @@ body {
   animation: softPulse 4s ease-in-out infinite;
 }
 
+.product-card:active {
+  transform: scale(0.98);
+}
+
+@media (hover: hover) {
+  .product-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(181, 106, 58, 0.28);
+    box-shadow: 0 12px 28px -16px rgba(44, 30, 22, 0.25);
+  }
+}
+
 .product-card {
   background: rgba(255, 252, 248, 0.95);
   border: 1px solid rgba(44, 30, 22, 0.06);
   transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.product-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(181, 106, 58, 0.28);
-  box-shadow: 0 12px 28px -16px rgba(44, 30, 22, 0.25);
 }
 
 .scrollbar-hide {

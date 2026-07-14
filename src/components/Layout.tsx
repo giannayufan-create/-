@@ -203,7 +203,7 @@ export default function Layout({ adminMode }: LayoutProps) {
         </div>
       </header>
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6 pb-24 md:pb-10 flex flex-col">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6 pb-28 md:pb-10 flex flex-col">
         <Outlet />
       </main>
 
@@ -212,7 +212,7 @@ export default function Layout({ adminMode }: LayoutProps) {
       <FloatingDock />
       <BackgroundMusic />
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#faf6f1]/95 backdrop-blur-md border-t border-[#e8d9c8] flex z-40">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#faf6f1]/95 backdrop-blur-md border-t border-[#e8d9c8] flex z-40 safe-bottom">
         {[
           { to: '/', icon: Store, label: texts.navMenu },
           { to: '/cart', icon: ShoppingCart, label: texts.navCart, badge: totalItems },

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, doc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -8,6 +8,7 @@ import { DELIVERY_TIME_SLOTS, minDeliveryDate, maxDeliveryDate } from '../lib/de
 import { Minus, Plus, Trash2, ShoppingCart, ArrowRight, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
 import { useSiteSettings } from '../lib/useSettings';
 import { DELIVERY_METHOD_OPTIONS, PAYMENT_METHOD_OPTIONS, PaymentMethodId, DeliveryMethodId } from '../types';
+import { CheckoutFieldErrors, getFirstCheckoutError, validateCheckoutForm } from '../lib/validateCheckout';
 
 export default function Cart() {
   const { cart, cartTotal, updateQuantity, removeFromCart, clearCart, user, userData, setAuthModalOpen, setProfileModalOpen } = useStore();
@@ -20,6 +21,8 @@ export default function Cart() {
   const [deliveryTime, setDeliveryTime] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId | ''>('');
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethodId | ''>('');
+  const [fieldErrors, setFieldErrors] = useState<CheckoutFieldErrors>({});
+  const formRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   const paymentOptions = useMemo(() => PAYMENT_METHOD_OPTIONS.map((o) => ({
@@ -62,12 +65,27 @@ export default function Cart() {
   const checkout = async () => {
     if (!user) { setAuthModalOpen(true); return; }
     if (!userData?.isProfileComplete) { setProfileModalOpen(true); return; }
-    if (!deliveryMethod) { setError('請選擇配送方式'); return; }
-    if (!paymentMethod) { setError('請選擇付款方式'); return; }
-    if (!enabledPayments.some((o) => o.id === paymentMethod)) { setError('此付款方式尚未開放'); return; }
-    if (!enabledDeliveries.some((o) => o.id === deliveryMethod)) { setError('此配送方式尚未開放'); return; }
-    if (!deliveryDate) { setError('請選擇配送日期'); return; }
-    if (!deliveryTime) { setError('請選擇配送時間'); return; }
+
+    const errors = validateCheckoutForm({
+      deliveryMethod,
+      paymentMethod,
+      deliveryDate,
+      deliveryTime,
+    });
+    if (!enabledPayments.some((o) => o.id === paymentMethod)) {
+      errors.paymentMethod = '此付款方式尚未開放';
+    }
+    if (!enabledDeliveries.some((o) => o.id === deliveryMethod)) {
+      errors.deliveryMethod = '此配送方式尚未開放';
+    }
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError(getFirstCheckoutError(errors) || '請檢查結帳資料');
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
+    setFieldErrors({});
     setError(''); setSuccess(''); setChecking(true);
 
     const paymentLabel = PAYMENT_METHOD_OPTIONS.find((o) => o.id === paymentMethod)?.label || paymentMethod;
@@ -222,7 +240,7 @@ export default function Cart() {
           </div>
 
           {/* 結帳資訊合併成一塊，減少卡片堆疊 */}
-          <div className="bg-white rounded-2xl border border-stone-200 p-3.5 space-y-3.5 mb-3">
+          <div ref={formRef} className="bg-white rounded-2xl border border-stone-200 p-3.5 space-y-3.5 mb-3">
             {userData?.isProfileComplete && (
               <div className="flex items-start justify-between gap-3 pb-3 border-b border-stone-100">
                 <div className="min-w-0">
@@ -230,7 +248,7 @@ export default function Cart() {
                   <p className="text-sm font-bold text-stone-800">{userData.name} · {userData.phone}</p>
                   <p className="text-[11px] text-stone-500 mt-0.5 line-clamp-2">{userData.shippingAddress}</p>
                 </div>
-                <button type="button" onClick={() => setProfileModalOpen(true)} className="text-[11px] text-amber-600 font-bold shrink-0">修改</button>
+                <button type="button" onClick={() => setProfileModalOpen(true)} className="text-[11px] text-amber-600 font-bold shrink-0 min-h-10 px-2">修改</button>
               </div>
             )}
 
@@ -242,13 +260,14 @@ export default function Cart() {
                     key={opt.id}
                     type="button"
                     disabled={!opt.enabled}
-                    onClick={() => setDeliveryMethod(opt.id)}
-                    className={chip(deliveryMethod === opt.id, !opt.enabled)}
+                    onClick={() => { setDeliveryMethod(opt.id); setFieldErrors((e) => ({ ...e, deliveryMethod: undefined })); }}
+                    className={`${chip(deliveryMethod === opt.id, !opt.enabled)} min-h-10`}
                   >
                     {opt.label}{!opt.enabled ? '（未開放）' : ''}
                   </button>
                 ))}
               </div>
+              {fieldErrors.deliveryMethod && <p className="text-[11px] text-red-600 font-bold mt-1">{fieldErrors.deliveryMethod}</p>}
             </div>
 
             <div>
@@ -262,41 +281,47 @@ export default function Cart() {
                     key={opt.id}
                     type="button"
                     disabled={!opt.enabled}
-                    onClick={() => setPaymentMethod(opt.id)}
-                    className={chip(paymentMethod === opt.id, !opt.enabled)}
+                    onClick={() => { setPaymentMethod(opt.id); setFieldErrors((e) => ({ ...e, paymentMethod: undefined })); }}
+                    className={`${chip(paymentMethod === opt.id, !opt.enabled)} min-h-10`}
                   >
                     {opt.label}{!opt.enabled ? '（未開放）' : ''}
                   </button>
                 ))}
               </div>
+              {fieldErrors.paymentMethod && <p className="text-[11px] text-red-600 font-bold mt-1">{fieldErrors.paymentMethod}</p>}
             </div>
 
             <div>
               <p className="text-[11px] font-bold text-stone-400 mb-1.5">{texts.deliveryTitle} *</p>
               <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="date"
-                  required
-                  value={deliveryDate}
-                  onChange={(e) => setDeliveryDate(e.target.value)}
-                  min={minDeliveryDate()}
-                  max={maxDeliveryDate()}
-                  className="w-full bg-stone-50 border border-stone-200 rounded-lg px-2.5 py-2 text-xs focus:ring-2 focus:ring-amber-400 focus:outline-none"
-                />
-                <select
-                  required
-                  value={deliveryTime}
-                  onChange={(e) => setDeliveryTime(e.target.value)}
-                  className="w-full bg-stone-50 border border-stone-200 rounded-lg px-2.5 py-2 text-xs font-bold focus:ring-2 focus:ring-amber-400 focus:outline-none"
-                >
-                  <option value="">選擇時段</option>
-                  {DELIVERY_TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
+                <div>
+                  <input
+                    type="date"
+                    required
+                    value={deliveryDate}
+                    onChange={(e) => { setDeliveryDate(e.target.value); setFieldErrors((er) => ({ ...er, deliveryDate: undefined })); }}
+                    min={minDeliveryDate()}
+                    max={maxDeliveryDate()}
+                    className={`w-full bg-stone-50 border rounded-lg px-2.5 py-2.5 text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none min-h-11 ${fieldErrors.deliveryDate ? 'border-red-300' : 'border-stone-200'}`}
+                  />
+                  {fieldErrors.deliveryDate && <p className="text-[11px] text-red-600 font-bold mt-1">{fieldErrors.deliveryDate}</p>}
+                </div>
+                <div>
+                  <select
+                    required
+                    value={deliveryTime}
+                    onChange={(e) => { setDeliveryTime(e.target.value); setFieldErrors((er) => ({ ...er, deliveryTime: undefined })); }}
+                    className={`w-full bg-stone-50 border rounded-lg px-2.5 py-2.5 text-sm font-bold focus:ring-2 focus:ring-amber-400 focus:outline-none min-h-11 ${fieldErrors.deliveryTime ? 'border-red-300' : 'border-stone-200'}`}
+                  >
+                    <option value="">選擇時段</option>
+                    {DELIVERY_TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  {fieldErrors.deliveryTime && <p className="text-[11px] text-red-600 font-bold mt-1">{fieldErrors.deliveryTime}</p>}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* 結帳區塊跟著內容走，不用 fixed，避免捲動版面錯位 */}
           <div className="surface-warm border border-[#eadfce] rounded-2xl p-3.5">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
@@ -306,8 +331,8 @@ export default function Cart() {
               <button
                 type="button"
                 onClick={checkout}
-                disabled={checking || oversold || !deliveryDate || !deliveryTime || !paymentMethod || !deliveryMethod}
-                className="btn-ink font-bold px-5 py-3 rounded-xl flex items-center gap-2 disabled:opacity-40 shrink-0 text-sm"
+                disabled={checking || oversold}
+                className="btn-ink font-bold px-5 py-3 rounded-xl flex items-center gap-2 disabled:opacity-40 shrink-0 text-sm min-h-12"
               >
                 {checking ? <><Loader2 className="w-4 h-4 animate-spin" />處理中</> : <><span>{texts.checkoutBtn}</span><ArrowRight className="w-4 h-4" /></>}
               </button>
