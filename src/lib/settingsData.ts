@@ -29,5 +29,11 @@ export function mergeSettings(data?: Partial<AppSettings>): AppSettings {
     paymentTransferEnabled: data?.paymentTransferEnabled ?? DEFAULT_SETTINGS.paymentTransferEnabled,
     paymentCreditEnabled: data?.paymentCreditEnabled ?? DEFAULT_SETTINGS.paymentCreditEnabled,
     deliveryPersonalEnabled: data?.deliveryPersonalEnabled ?? DEFAULT_SETTINGS.deliveryPersonalEnabled,
+    deliveryStartHour: data?.deliveryStartHour ?? DEFAULT_SETTINGS.deliveryStartHour,
+    deliveryEndHour: data?.deliveryEndHour ?? DEFAULT_SETTINGS.deliveryEndHour,
+    deliverySlotMinutes: data?.deliverySlotMinutes ?? DEFAULT_SETTINGS.deliverySlotMinutes,
+    deliveryMaxDays: data?.deliveryMaxDays ?? DEFAULT_SETTINGS.deliveryMaxDays,
+    deliveryLeadDays: data?.deliveryLeadDays ?? DEFAULT_SETTINGS.deliveryLeadDays,
+    minOrderAmount: data?.minOrderAmount ?? DEFAULT_SETTINGS.minOrderAmount,
   };
 }

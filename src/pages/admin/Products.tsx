@@ -7,7 +7,7 @@ import { getSettingsSnapshot, setSettingsCache, loadSettings } from '../../lib/s
 import { DEFAULT_SETTINGS, SAMPLE_PRODUCTS } from '../../lib/seed';
 import { AppSettings } from '../../lib/settingsData';
 import {
-  Plus, Trash2, Edit2, Check, X, RefreshCw, GripVertical, Star,
+  Download, Plus, Trash2, Edit2, Check, X, RefreshCw, GripVertical, Star,
   ChevronUp, ChevronDown, ImagePlus, Package, Tags, Search, Save,
 } from 'lucide-react';
 import { MAIN_CATEGORIES } from '../../types';
@@ -365,6 +365,20 @@ export default function AdminProducts() {
           <p className="text-sm text-[#7a6555]">名稱／價格／庫存清楚標示 · 大類小類可新增刪除 · 拖拉只從把手操作</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => {
+            if (!products.length) return;
+            const headers = ['名稱', '大類', '小類', '價格', '庫存', '精選', '銷量', '說明'];
+            const rows = products.map((p) => [
+              p.name, p.category, p.subCategory, p.price, p.stock,
+              p.isFeatured ? '是' : '否', p.salesCount ?? 0, p.description || '',
+            ]);
+            const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+            const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '商品清單.csv'; a.click();
+          }}
+            className="flex items-center gap-2 bg-white border border-[#e8d9c8] px-3 py-2 rounded-xl text-xs font-bold">
+            <Download className="w-3.5 h-3.5" />匯出 CSV
+          </button>
           <button type="button" onClick={seedProducts} disabled={seeding}
             className="flex items-center gap-2 bg-amber-50 text-amber-800 border border-amber-200 px-3 py-2 rounded-xl text-xs font-bold disabled:opacity-50">
             <RefreshCw className={`w-3.5 h-3.5 ${seeding ? 'animate-spin' : ''}`} />匯入範例

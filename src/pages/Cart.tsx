@@ -4,7 +4,7 @@ import { collection, doc, onSnapshot, runTransaction } from 'firebase/firestore'
 import { db } from '../lib/firebase';
 import { useStore } from '../lib/store';
 import { notifyOrderPlaced } from '../lib/orderNotify';
-import { DELIVERY_TIME_SLOTS, minDeliveryDate, maxDeliveryDate } from '../lib/deliverySlots';
+import { buildDeliveryTimeSlots, deliveryDateBounds } from '../lib/deliverySlots';
 import { Minus, Plus, Trash2, ShoppingCart, ArrowRight, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
 import { useSiteSettings } from '../lib/useSettings';
 import { DELIVERY_METHOD_OPTIONS, PAYMENT_METHOD_OPTIONS, PaymentMethodId, DeliveryMethodId } from '../types';
@@ -42,6 +42,13 @@ export default function Cart() {
   const enabledDeliveries = deliveryOptions.filter((o) => o.enabled);
   const onlyCashOpen = enabledPayments.length === 1 && enabledPayments[0]?.id === 'cash';
   const itemCount = cart.reduce((s, i) => s + i.quantity, 0);
+  const timeSlots = useMemo(() => buildDeliveryTimeSlots(settings), [
+    settings.deliveryStartHour, settings.deliveryEndHour, settings.deliverySlotMinutes,
+  ]);
+  const dateBounds = useMemo(() => deliveryDateBounds(settings), [
+    settings.deliveryLeadDays, settings.deliveryMaxDays,
+  ]);
+  const minOrder = settings.minOrderAmount || 0;
 
   useEffect(() => {
     return onSnapshot(collection(db, 'products'), (s) => setProducts(s.docs.map((d) => ({ id: d.id, ...d.data() }))));
@@ -66,17 +73,25 @@ export default function Cart() {
     if (!user) { setAuthModalOpen(true); return; }
     if (!userData?.isProfileComplete) { setProfileModalOpen(true); return; }
 
+    if (minOrder > 0 && cartTotal < minOrder) {
+      setError(`未達最低消費 $${minOrder}（目前 $${cartTotal}）`);
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     const errors = validateCheckoutForm({
       deliveryMethod,
       paymentMethod,
       deliveryDate,
       deliveryTime,
-    });
+    }, settings);
     if (!enabledPayments.some((o) => o.id === paymentMethod)) {
       errors.paymentMethod = '此付款方式尚未開放';
     }
     if (!enabledDeliveries.some((o) => o.id === deliveryMethod)) {
       errors.deliveryMethod = '此配送方式尚未開放';
+    }
+    if (deliveryTime && !timeSlots.includes(deliveryTime)) {
+      errors.deliveryTime = '請選擇有效配送時段';
     }
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -103,8 +118,13 @@ export default function Cart() {
         });
         snaps.forEach((snap, i) => {
           const item = cart[i];
-          const stock = snap.data().stock;
-          tx.update(doc(db, 'products', item.productId), { stock: Math.max(0, stock - item.quantity), updatedAt: now });
+          const data = snap.data();
+          const stock = data.stock;
+          tx.update(doc(db, 'products', item.productId), {
+            stock: Math.max(0, stock - item.quantity),
+            salesCount: (data.salesCount || 0) + item.quantity,
+            updatedAt: now,
+          });
         });
         tx.set(orderRef, {
           userId: user.uid,
@@ -300,8 +320,8 @@ export default function Cart() {
                     required
                     value={deliveryDate}
                     onChange={(e) => { setDeliveryDate(e.target.value); setFieldErrors((er) => ({ ...er, deliveryDate: undefined })); }}
-                    min={minDeliveryDate()}
-                    max={maxDeliveryDate()}
+                    min={dateBounds.min}
+                    max={dateBounds.max}
                     className={`w-full bg-stone-50 border rounded-lg px-2.5 py-2.5 text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none min-h-11 ${fieldErrors.deliveryDate ? 'border-red-300' : 'border-stone-200'}`}
                   />
                   {fieldErrors.deliveryDate && <p className="text-[11px] text-red-600 font-bold mt-1">{fieldErrors.deliveryDate}</p>}
@@ -314,7 +334,7 @@ export default function Cart() {
                     className={`w-full bg-stone-50 border rounded-lg px-2.5 py-2.5 text-sm font-bold focus:ring-2 focus:ring-amber-400 focus:outline-none min-h-11 ${fieldErrors.deliveryTime ? 'border-red-300' : 'border-stone-200'}`}
                   >
                     <option value="">選擇時段</option>
-                    {DELIVERY_TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
+                    {timeSlots.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
                   {fieldErrors.deliveryTime && <p className="text-[11px] text-red-600 font-bold mt-1">{fieldErrors.deliveryTime}</p>}
                 </div>
@@ -326,6 +346,11 @@ export default function Cart() {
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[10px] text-[#9a8674] leading-snug">{texts.checkoutNote || '結帳後商家會盡速為您安排送貨'}</p>
+                {minOrder > 0 && (
+                  <p className={`text-[10px] font-bold mt-0.5 ${cartTotal < minOrder ? 'text-red-600' : 'text-emerald-700'}`}>
+                    最低消費 ${minOrder}{cartTotal < minOrder ? `（還差 $${Math.ceil(minOrder - cartTotal)}）` : ' · 已達標'}
+                  </p>
+                )}
                 <p className="font-display text-2xl font-bold text-[var(--color-copper)] leading-tight mt-0.5">${cartTotal.toFixed(0)}</p>
               </div>
               <button

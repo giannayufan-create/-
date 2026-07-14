@@ -48,4 +48,9 @@ export const DEFAULT_SETTINGS = {
   paymentTransferEnabled: false,
   paymentCreditEnabled: false,
   deliveryPersonalEnabled: true,
+  deliveryStartHour: 9,
+  deliveryEndHour: 20,
+  deliverySlotMinutes: 30,
+  deliveryMaxDays: 30,
+  deliveryLeadDays: 0,
 };

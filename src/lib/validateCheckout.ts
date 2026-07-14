@@ -1,33 +1,32 @@
 import { z } from 'zod';
-import { minDeliveryDate, maxDeliveryDate } from './deliverySlots';
+import { deliveryDateBounds, type DeliverySchedule } from './deliverySlots';
 
 export const checkoutSchema = z.object({
   deliveryMethod: z.string().min(1, '請選擇配送方式'),
   paymentMethod: z.string().min(1, '請選擇付款方式'),
   deliveryDate: z.string().min(1, '請選擇配送日期'),
   deliveryTime: z.string().min(1, '請選擇配送時段'),
-}).superRefine((data, ctx) => {
-  if (!data.deliveryDate) return;
-  const min = minDeliveryDate();
-  const max = maxDeliveryDate();
-  if (data.deliveryDate < min) {
-    ctx.addIssue({ code: 'custom', path: ['deliveryDate'], message: '配送日期不能早於今天' });
-  }
-  if (data.deliveryDate > max) {
-    ctx.addIssue({ code: 'custom', path: ['deliveryDate'], message: '配送日期不可超過 30 天' });
-  }
 });
 
 export type CheckoutForm = z.infer<typeof checkoutSchema>;
 export type CheckoutFieldErrors = Partial<Record<keyof CheckoutForm, string>>;
 
-export function validateCheckoutForm(form: CheckoutForm): CheckoutFieldErrors {
-  const result = checkoutSchema.safeParse(form);
-  if (result.success) return {};
+export function validateCheckoutForm(form: CheckoutForm, schedule?: DeliverySchedule): CheckoutFieldErrors {
+  const base = checkoutSchema.safeParse(form);
   const errors: CheckoutFieldErrors = {};
-  for (const issue of result.error.issues) {
-    const key = issue.path[0] as keyof CheckoutForm;
-    if (key && !errors[key]) errors[key] = issue.message;
+  if (!base.success) {
+    for (const issue of base.error.issues) {
+      const key = issue.path[0] as keyof CheckoutForm;
+      if (key && !errors[key]) errors[key] = issue.message;
+    }
+  }
+  if (form.deliveryDate) {
+    const { min, max } = deliveryDateBounds(schedule);
+    if (form.deliveryDate < min) {
+      errors.deliveryDate = '配送日期過早，請改選其他日期';
+    } else if (form.deliveryDate > max) {
+      errors.deliveryDate = `配送日期不可超過可預約範圍（最多 ${schedule?.deliveryMaxDays ?? 30} 天）`;
+    }
   }
   return errors;
 }

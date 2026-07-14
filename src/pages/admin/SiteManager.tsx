@@ -6,15 +6,17 @@ import { PAGE_TEXT_FIELDS } from '../../lib/pageTexts';
 import { CarouselSlide } from '../../types';
 import {
   Layout, Image, Type, GripVertical, Plus, Trash2, ChevronUp, ChevronDown,
-  Check, Loader2, Star, Music, Save, Eye, ImagePlus, Scaling, Wallet,
+  Check, Loader2, Star, Music, Save, Eye, ImagePlus, Scaling, Wallet, Clock, X,
 } from 'lucide-react';
 import { CARD_SIZE_PRESETS, CardSizeId } from '../../types';
 import { fileToBase64Hero } from '../../lib/imageUpload';
+import { buildDeliveryTimeSlots } from '../../lib/deliverySlots';
 
 const SECTIONS = [
   { id: 'carousel', label: '首頁輪播', icon: Image, color: 'from-amber-500 to-orange-500' },
   { id: 'sizes', label: '卡片尺寸', icon: Scaling, color: 'from-rose-500 to-orange-600' },
-  { id: 'checkout', label: '結帳方式', icon: Wallet, color: 'from-cyan-500 to-blue-600' },
+  { id: 'checkout', label: '結帳／配送', icon: Wallet, color: 'from-cyan-500 to-blue-600' },
+  { id: 'hours', label: '營業時段', icon: Clock, color: 'from-orange-500 to-amber-600' },
   { id: 'texts', label: '前台文案', icon: Type, color: 'from-blue-500 to-indigo-500' },
   { id: 'categories', label: '分類排序', icon: Layout, color: 'from-emerald-500 to-teal-500' },
   { id: 'store', label: '店家資訊', icon: Star, color: 'from-purple-500 to-pink-500' },
@@ -30,6 +32,7 @@ export default function SiteManager() {
   const [dragSlide, setDragSlide] = useState<number | null>(null);
   const [uploadErr, setUploadErr] = useState('');
   const [saveErr, setSaveErr] = useState('');
+  const [newSubCat, setNewSubCat] = useState<Record<string, string>>({});
 
   useEffect(() => { setSettings(getSettingsSnapshot()); }, []);
 
@@ -90,20 +93,36 @@ export default function SiteManager() {
 
   const preview = () => window.open(`${window.location.origin}/`, '_blank', 'noopener,noreferrer');
 
+  const addSubCategory = (cat: string) => {
+    const name = (newSubCat[cat] || '').trim();
+    if (!name) return;
+    const subs = { ...settings.subCategories };
+    subs[cat] = [...(subs[cat] || []), name];
+    setSettings({ ...settings, subCategories: subs });
+    setNewSubCat({ ...newSubCat, [cat]: '' });
+  };
+
+  const removeSubCategory = (cat: string, sub: string) => {
+    const subs = { ...settings.subCategories };
+    subs[cat] = (subs[cat] || []).filter((s) => s !== sub);
+    setSettings({ ...settings, subCategories: subs });
+  };
+
+  const slotPreview = buildDeliveryTimeSlots(settings);
+
   return (
     <div className="flex flex-col lg:flex-row gap-6 min-h-[70vh]">
-      {/* 左側模組清單 */}
       <aside className="lg:w-56 shrink-0">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-xl font-black text-stone-900">前台管理</h1>
-            <p className="text-xs text-stone-500">拖拉排序 · 即時編輯</p>
+            <h1 className="font-display text-xl font-bold text-[var(--color-ink)]">店面設定</h1>
+            <p className="text-xs text-[#7a6555]">輪播 · 結帳 · 營業時段</p>
           </div>
         </div>
         <div className="space-y-2">
           {SECTIONS.map((s) => (
-            <button key={s.id} onClick={() => setActive(s.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${active === s.id ? 'bg-stone-900 text-white shadow-lg' : 'bg-white border border-stone-200 text-stone-600 hover:border-amber-300'}`}>
+            <button key={s.id} type="button" onClick={() => setActive(s.id)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${active === s.id ? 'bg-[var(--color-ink)] text-white shadow-lg' : 'surface-warm text-[#6b5648] hover:border-[var(--color-copper)]/40'}`}>
               <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${s.color} flex items-center justify-center text-white shrink-0`}>
                 <s.icon className="w-4 h-4" />
               </div>
@@ -112,19 +131,18 @@ export default function SiteManager() {
           ))}
         </div>
         <div className="mt-4 space-y-2">
-          <button onClick={preview} className="w-full flex items-center justify-center gap-2 bg-amber-50 text-amber-700 border border-amber-200 py-2.5 rounded-xl text-sm font-bold hover:bg-amber-100">
+          <button type="button" onClick={preview} className="w-full flex items-center justify-center gap-2 bg-amber-50 text-amber-800 border border-amber-200 py-2.5 rounded-xl text-sm font-bold hover:bg-amber-100">
             <Eye className="w-4 h-4" />預覽前台
           </button>
-          <button onClick={save} disabled={loading}
-            className="w-full flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl text-sm font-bold disabled:opacity-50">
+          <button type="button" onClick={save} disabled={loading}
+            className="w-full flex items-center justify-center gap-2 btn-copper py-2.5 rounded-xl text-sm font-bold disabled:opacity-50">
             {loading ? <><Loader2 className="w-4 h-4 animate-spin" />儲存中</> : saved ? <><Check className="w-4 h-4" />已儲存</> : <><Save className="w-4 h-4" />儲存變更</>}
           </button>
           {saveErr && <p className="text-[11px] text-red-600 font-bold leading-snug">{saveErr}</p>}
         </div>
       </aside>
 
-      {/* 右側編輯區 */}
-      <div className="flex-1 bg-white rounded-2xl border border-stone-200 p-6 overflow-y-auto">
+      <div className="flex-1 surface-warm rounded-2xl p-6 overflow-y-auto">
         {active === 'carousel' && (
           <div className="space-y-4">
             <h2 className="font-black text-lg text-stone-900">首頁輪播幻燈片</h2>
@@ -248,20 +266,87 @@ export default function SiteManager() {
                 </p>
               )}
             </div>
-            <div className="bg-stone-50 rounded-xl p-4 space-y-3 border border-stone-100">
-              <p className="font-bold text-stone-800 text-sm">配送方式</p>
-              <label className="flex items-center justify-between gap-3 bg-white rounded-xl border border-stone-200 px-4 py-3 cursor-pointer">
+            <div className="bg-[#faf6f1] rounded-xl p-4 space-y-3 border border-[#e8d9c8]">
+              <p className="font-bold text-[var(--color-ink)] text-sm">配送方式</p>
+              <label className="flex items-center justify-between gap-3 bg-white rounded-xl border border-[#e8d9c8] px-4 py-3 cursor-pointer">
                 <div>
-                  <p className="font-bold text-stone-800 text-sm">本人親自送達</p>
-                  <p className="text-[11px] text-stone-400">目前僅此一種</p>
+                  <p className="font-bold text-[var(--color-ink)] text-sm">本人親自送達</p>
+                  <p className="text-[11px] text-[#9a8674]">目前僅此一種</p>
                 </div>
                 <input
                   type="checkbox"
                   checked={settings.deliveryPersonalEnabled !== false}
                   onChange={(e) => setSettings({ ...settings, deliveryPersonalEnabled: e.target.checked })}
-                  className="w-5 h-5 accent-amber-600"
+                  className="w-5 h-5 accent-[var(--color-copper)]"
                 />
               </label>
+            </div>
+            <div className="bg-[#faf6f1] rounded-xl p-4 space-y-3 border border-[#e8d9c8]">
+              <p className="font-bold text-[var(--color-ink)] text-sm">最低消費金額</p>
+              <p className="text-[11px] text-[#9a8674]">設 0 表示不限制。結帳時未達金額會阻擋送出。</p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-[#7a6555]">$</span>
+                <input
+                  type="number"
+                  min={0}
+                  value={settings.minOrderAmount ?? 0}
+                  onChange={(e) => setSettings({ ...settings, minOrderAmount: Math.max(0, Number(e.target.value) || 0) })}
+                  className="w-40 bg-white border border-[#e8d9c8] rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-[var(--color-copper)]/30 focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {active === 'hours' && (
+          <div className="space-y-5">
+            <div>
+              <h2 className="font-display font-bold text-lg text-[var(--color-ink)]">營業／配送時段</h2>
+              <p className="text-xs text-[#7a6555] mt-1">控制前台可選的配送日期與時段</p>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-ink)] mb-1">配送開始（時）</label>
+                <input type="number" min={0} max={23} value={settings.deliveryStartHour ?? 9}
+                  onChange={(e) => setSettings({ ...settings, deliveryStartHour: Number(e.target.value) })}
+                  className="w-full bg-[#faf6f1] border border-[#e8d9c8] rounded-xl p-3 text-sm font-bold" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-ink)] mb-1">配送結束（時）</label>
+                <input type="number" min={0} max={23} value={settings.deliveryEndHour ?? 20}
+                  onChange={(e) => setSettings({ ...settings, deliveryEndHour: Number(e.target.value) })}
+                  className="w-full bg-[#faf6f1] border border-[#e8d9c8] rounded-xl p-3 text-sm font-bold" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-ink)] mb-1">時段間隔</label>
+                <select value={settings.deliverySlotMinutes ?? 30}
+                  onChange={(e) => setSettings({ ...settings, deliverySlotMinutes: Number(e.target.value) })}
+                  className="w-full bg-[#faf6f1] border border-[#e8d9c8] rounded-xl p-3 text-sm font-bold">
+                  <option value={30}>每 30 分鐘</option>
+                  <option value={60}>每 60 分鐘</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-ink)] mb-1">可預約天數</label>
+                <input type="number" min={1} max={90} value={settings.deliveryMaxDays ?? 30}
+                  onChange={(e) => setSettings({ ...settings, deliveryMaxDays: Math.max(1, Number(e.target.value) || 30) })}
+                  className="w-full bg-[#faf6f1] border border-[#e8d9c8] rounded-xl p-3 text-sm font-bold" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-bold text-[var(--color-ink)] mb-1">最早可訂（提前天數）</label>
+                <input type="number" min={0} max={14} value={settings.deliveryLeadDays ?? 0}
+                  onChange={(e) => setSettings({ ...settings, deliveryLeadDays: Math.max(0, Number(e.target.value) || 0) })}
+                  className="w-full bg-[#faf6f1] border border-[#e8d9c8] rounded-xl p-3 text-sm font-bold" />
+                <p className="text-[11px] text-[#9a8674] mt-1">0 = 今天可訂；1 = 最早明天</p>
+              </div>
+            </div>
+            <div className="bg-[#faf6f1] rounded-xl p-4 border border-[#e8d9c8]">
+              <p className="text-xs font-bold text-[#7a6555] mb-2">時段預覽（共 {slotPreview.length} 個）</p>
+              <div className="flex flex-wrap gap-1.5">
+                {slotPreview.map((t) => (
+                  <span key={t} className="text-[11px] font-bold bg-white border border-[#e8d9c8] px-2 py-1 rounded-lg text-[var(--color-ink)]">{t}</span>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -287,8 +372,8 @@ export default function SiteManager() {
 
         {active === 'categories' && (
           <div className="space-y-4">
-            <h2 className="font-black text-lg text-stone-900">分類排序</h2>
-            <p className="text-xs text-stone-500">拖曳分類可改變前台菜單大類順序</p>
+            <h2 className="font-display font-bold text-lg text-[var(--color-ink)]">分類排序與小類</h2>
+            <p className="text-xs text-[#7a6555]">拖曳調整大類順序，並管理各大小類名稱</p>
             {(settings.categoryOrder || []).map((cat, idx) => (
               <div key={cat} draggable onDragStart={() => setDragCat(cat)} onDragOver={(e) => e.preventDefault()}
                 onDrop={() => {
@@ -298,12 +383,27 @@ export default function SiteManager() {
                   if (from >= 0 && from !== to) reorderCategory(from, to);
                   setDragCat(null);
                 }}
-                className={`flex items-center gap-3 bg-stone-50 rounded-xl p-4 border border-stone-100 ${dragCat === cat ? 'opacity-50' : ''}`}>
-                <GripVertical className="w-5 h-5 text-stone-300 cursor-grab" />
-                <span className="font-black text-stone-800 flex-1">{cat}</span>
-                <span className="text-xs text-stone-400">順序 {idx + 1}</span>
-                <button onClick={() => reorderCategory(idx, idx - 1)} disabled={idx === 0} className="p-1.5 text-stone-400 disabled:opacity-20"><ChevronUp className="w-4 h-4" /></button>
-                <button onClick={() => reorderCategory(idx, idx + 1)} disabled={idx === (settings.categoryOrder?.length || 0) - 1} className="p-1.5 text-stone-400 disabled:opacity-20"><ChevronDown className="w-4 h-4" /></button>
+                className={`bg-[#faf6f1] rounded-xl p-4 border border-[#e8d9c8] ${dragCat === cat ? 'opacity-50' : ''}`}>
+                <div className="flex items-center gap-3 mb-3">
+                  <GripVertical className="w-5 h-5 text-[#cbb9a5] cursor-grab" />
+                  <span className="font-bold text-[var(--color-ink)] flex-1">{cat}</span>
+                  <span className="text-xs text-[#9a8674]">順序 {idx + 1}</span>
+                  <button type="button" onClick={() => reorderCategory(idx, idx - 1)} disabled={idx === 0} className="p-1.5 text-[#9a8674] disabled:opacity-20"><ChevronUp className="w-4 h-4" /></button>
+                  <button type="button" onClick={() => reorderCategory(idx, idx + 1)} disabled={idx === (settings.categoryOrder?.length || 0) - 1} className="p-1.5 text-[#9a8674] disabled:opacity-20"><ChevronDown className="w-4 h-4" /></button>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {(settings.subCategories?.[cat] || []).map((sub) => (
+                    <span key={sub} className="flex items-center gap-1 bg-white border border-[#e8d9c8] px-2 py-1 rounded-lg text-xs font-bold">
+                      {sub}
+                      <button type="button" onClick={() => removeSubCategory(cat, sub)} className="text-[#9a8674] hover:text-red-500"><X className="w-3 h-3" /></button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input placeholder="新增小類名稱" value={newSubCat[cat] || ''} onChange={(e) => setNewSubCat({ ...newSubCat, [cat]: e.target.value })}
+                    className="flex-1 bg-white border border-[#e8d9c8] rounded-lg p-2 text-sm" />
+                  <button type="button" onClick={() => addSubCategory(cat)} className="btn-copper px-3 py-2 rounded-lg text-xs font-bold">新增</button>
+                </div>
               </div>
             ))}
           </div>

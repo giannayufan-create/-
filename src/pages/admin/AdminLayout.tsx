@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingBag, Users, Settings,
-  ArrowLeft, LogOut, PanelsTopLeft, Plus,
+  ArrowLeft, LogOut, Store, Plus, BarChart3,
 } from 'lucide-react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -14,9 +14,10 @@ const NAV = [
   { to: '/admin', label: '總覽', full: '總覽儀表板', icon: LayoutDashboard, end: true },
   { to: '/admin/orders', label: '訂單', full: '訂單管理', icon: ShoppingBag },
   { to: '/admin/products', label: '商品', full: '商品管理', icon: Package },
-  { to: '/admin/site', label: '前台', full: '前台管理', icon: PanelsTopLeft },
   { to: '/admin/members', label: '會員', full: '會員管理', icon: Users },
-  { to: '/admin/settings', label: '設定', full: '進階設定', icon: Settings },
+  { to: '/admin/site', label: '店面', full: '店面設定', icon: Store },
+  { to: '/admin/reports', label: '報表', full: '營運報表', icon: BarChart3 },
+  { to: '/admin/system', label: '系統', full: '系統整合', icon: Settings },
 ];
 
 export default function AdminLayout() {
@@ -53,7 +54,7 @@ export default function AdminLayout() {
           </div>
           <NotificationBell dark />
         </div>
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {NAV.map(({ to, full, icon: Icon, end }) => (
             <NavLink key={to} to={to} end={end}
               className={({ isActive }) =>

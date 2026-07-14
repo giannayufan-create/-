@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import Storefront from './pages/Storefront';
 import Cart from './pages/Cart';
@@ -9,8 +8,9 @@ import AdminDashboard from './pages/admin/Dashboard';
 import AdminOrders from './pages/admin/Orders';
 import AdminProducts from './pages/admin/Products';
 import AdminMembers from './pages/admin/Members';
-import AdminSettings from './pages/admin/Settings';
+import AdminSystem from './pages/admin/System';
 import SiteManager from './pages/admin/SiteManager';
+import AdminReports from './pages/admin/Reports';
 
 export default function App() {
   return (
@@ -28,7 +28,9 @@ export default function App() {
             <Route path="products" element={<AdminProducts />} />
             <Route path="members" element={<AdminMembers />} />
             <Route path="site" element={<SiteManager />} />
-            <Route path="settings" element={<AdminSettings />} />
+            <Route path="reports" element={<AdminReports />} />
+            <Route path="system" element={<AdminSystem />} />
+            <Route path="settings" element={<Navigate to="/admin/system" replace />} />
           </Route>
         </Route>
       </Routes>

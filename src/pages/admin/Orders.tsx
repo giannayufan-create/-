@@ -3,10 +3,12 @@ import { collection, onSnapshot, updateDoc, doc, getDoc } from 'firebase/firesto
 import { db } from '../../lib/firebase';
 import { format, isToday, isThisMonth } from 'date-fns';
 import {
-  Search, Calendar, Download, ChevronDown, ChevronUp,
+  Search, Calendar, Download, ChevronDown, ChevronUp, Printer,
   Clock, CheckCircle, XCircle, Truck, DollarSign, Package,
 } from 'lucide-react';
 import { downloadAdminOrdersCsv } from '../../lib/orderExport';
+import { printOrderSlip } from '../../lib/printOrder';
+import { getSettingsSnapshot } from '../../lib/settingsCache';
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: typeof Clock }> = {
   pending: { label: '待處理', color: 'bg-amber-100 text-amber-800 border-amber-200', icon: Clock },
@@ -24,6 +26,7 @@ export default function AdminOrders() {
   const [day, setDay] = useState('');
   const [deliveryFilter, setDeliveryFilter] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
 
   useEffect(() => {
     return onSnapshot(collection(db, 'orders'), (s) => {
@@ -67,6 +70,11 @@ export default function AdminOrders() {
     }
   };
 
+  const saveNote = async (orderId: string) => {
+    const note = (noteDrafts[orderId] ?? orders.find((o) => o.id === orderId)?.adminNote ?? '').trim();
+    await updateDoc(doc(db, 'orders', orderId), { adminNote: note, updatedAt: new Date().toISOString() });
+  };
+
   const filtered = orders.filter((o) => {
     if (filter !== 'all' && o.status !== filter) return false;
     const d = new Date(o.createdAt);
@@ -102,24 +110,24 @@ export default function AdminOrders() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-black text-stone-900 mb-1">訂單智慧管理</h1>
-          <p className="text-sm text-stone-500">快速篩選、一鍵更新狀態、下載報表</p>
+          <h1 className="font-display text-2xl font-bold text-[var(--color-ink)] mb-1">訂單管理</h1>
+          <p className="text-sm text-[#7a6555]">篩選、改狀態、內部備註、列印出貨單</p>
         </div>
-        <button onClick={handleDownload} disabled={!filtered.length}
-          className="flex items-center gap-2 bg-stone-900 hover:bg-amber-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold disabled:opacity-40 transition-colors">
+        <button type="button" onClick={handleDownload} disabled={!filtered.length}
+          className="flex items-center gap-2 btn-copper px-4 py-2.5 rounded-xl text-sm font-bold disabled:opacity-40">
           <Download className="w-4 h-4" />下載 CSV（{filtered.length} 筆）
         </button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {stats.map((s) => (
-          <div key={s.label} className="bg-white rounded-2xl border border-stone-200 p-4 flex items-center gap-3">
+          <div key={s.label} className="surface-warm rounded-2xl p-4 flex items-center gap-3">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.color}`}>
               <s.icon className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-stone-400 uppercase">{s.label}</p>
-              <p className="text-lg font-black text-stone-900">{s.value}</p>
+              <p className="text-[10px] font-bold text-[#9a8674] uppercase">{s.label}</p>
+              <p className="text-lg font-black text-[var(--color-ink)]">{s.value}</p>
             </div>
           </div>
         ))}
@@ -127,38 +135,38 @@ export default function AdminOrders() {
 
       <div className="flex flex-col gap-3 mb-4">
         <div className="relative">
-          <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-[#9a8674] absolute left-3 top-1/2 -translate-y-1/2" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜尋姓名、電話、訂單編號..."
-            className="w-full pl-9 pr-4 py-3 bg-white border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none" />
+            className="w-full pl-9 pr-4 py-3 bg-white border border-[#e8d9c8] rounded-xl text-sm focus:ring-2 focus:ring-[var(--color-copper)]/30 focus:outline-none" />
         </div>
 
         <div className="flex flex-wrap gap-2">
           {[{ k: 'all', l: '全部' }, ...Object.entries(STATUS_MAP).map(([k, v]) => ({ k, l: v.label }))].map((s) => (
-            <button key={s.k} onClick={() => setFilter(s.k)}
-              className={`px-4 py-2 rounded-full text-xs font-bold transition-colors ${filter === s.k ? 'bg-amber-600 text-white' : 'bg-white border border-stone-200 text-stone-600 hover:border-amber-300'}`}>
+            <button key={s.k} type="button" onClick={() => setFilter(s.k)}
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-colors ${filter === s.k ? 'bg-[var(--color-copper)] text-white' : 'bg-white border border-[#e8d9c8] text-[#6b5648] hover:border-amber-300'}`}>
               {s.l}{s.k !== 'all' && ` (${orders.filter((o) => o.status === s.k).length})`}
             </button>
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 bg-white border border-stone-200 rounded-xl p-3">
-          <Calendar className="w-4 h-4 text-amber-600 shrink-0" />
-          <select value={year} onChange={(e) => setYear(e.target.value)} className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-1.5 text-sm font-bold">
+        <div className="flex flex-wrap items-center gap-2 surface-warm rounded-xl p-3">
+          <Calendar className="w-4 h-4 text-[var(--color-copper)] shrink-0" />
+          <select value={year} onChange={(e) => setYear(e.target.value)} className="bg-[#faf6f1] border border-[#e8d9c8] rounded-lg px-3 py-1.5 text-sm font-bold">
             <option value="">全部年份</option>
             {years.filter(Boolean).map((y) => <option key={y} value={y}>{y} 年</option>)}
           </select>
-          <select value={month} onChange={(e) => setMonth(e.target.value)} className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-1.5 text-sm font-bold">
+          <select value={month} onChange={(e) => setMonth(e.target.value)} className="bg-[#faf6f1] border border-[#e8d9c8] rounded-lg px-3 py-1.5 text-sm font-bold">
             <option value="">全部月份</option>
             {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map((m) => <option key={m} value={m}>{m} 月</option>)}
           </select>
-          <select value={day} onChange={(e) => setDay(e.target.value)} className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-1.5 text-sm font-bold">
+          <select value={day} onChange={(e) => setDay(e.target.value)} className="bg-[#faf6f1] border border-[#e8d9c8] rounded-lg px-3 py-1.5 text-sm font-bold">
             <option value="">全部日期</option>
             {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0')).map((d) => <option key={d} value={d}>{d} 日</option>)}
           </select>
           <input type="date" value={deliveryFilter} onChange={(e) => setDeliveryFilter(e.target.value)}
-            className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-1.5 text-sm font-bold" title="配送日期" />
+            className="bg-[#faf6f1] border border-[#e8d9c8] rounded-lg px-3 py-1.5 text-sm font-bold" title="配送日期" />
           {(year || month || day || deliveryFilter) && (
-            <button onClick={() => { setYear(''); setMonth(''); setDay(''); setDeliveryFilter(''); }} className="text-xs text-amber-600 font-bold hover:underline">清除篩選</button>
+            <button type="button" onClick={() => { setYear(''); setMonth(''); setDay(''); setDeliveryFilter(''); }} className="text-xs text-[var(--color-copper)] font-bold hover:underline">清除篩選</button>
           )}
         </div>
       </div>
@@ -168,43 +176,66 @@ export default function AdminOrders() {
           const st = STATUS_MAP[o.status] || STATUS_MAP.pending;
           const isOpen = expanded === o.id;
           const cancelled = o.status === 'cancelled';
+          const noteValue = noteDrafts[o.id] ?? o.adminNote ?? '';
           return (
-            <div key={o.id} className={`bg-white rounded-2xl border overflow-hidden transition-shadow hover:shadow-md ${cancelled ? 'border-stone-200 opacity-80' : 'border-stone-200'}`}>
+            <div key={o.id} className={`surface-warm rounded-2xl overflow-hidden transition-shadow hover:shadow-md ${cancelled ? 'opacity-80' : ''}`}>
               <div className="p-4 flex flex-wrap items-center gap-3">
                 <div className="flex-1 min-w-[200px]">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono font-black text-stone-800">#{o.id.slice(0, 8)}</span>
+                    <span className="font-mono font-black text-[var(--color-ink)]">#{o.id.slice(0, 8)}</span>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${st.color}`}>{st.label}</span>
+                    {o.adminNote && <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full">有備註</span>}
                   </div>
-                  <p className="text-sm font-bold text-stone-800 mt-1">{o.customerName} · {o.customerPhone}</p>
-                  <p className="text-xs text-stone-500">{format(new Date(o.createdAt), 'yyyy/MM/dd HH:mm')}
-                    {o.deliveryDate && <span className="text-amber-700 font-bold ml-2">配送 {o.deliveryDate} {o.deliveryTime}</span>}
-                    {o.deliveryMethod && <span className="text-stone-500 ml-2">· {o.deliveryMethod}</span>}
-                    {o.paymentMethod && <span className="text-stone-500 ml-2">· 付款 {o.paymentMethod}</span>}
+                  <p className="text-sm font-bold text-[var(--color-ink)] mt-1">{o.customerName} · {o.customerPhone}</p>
+                  <p className="text-xs text-[#7a6555]">{format(new Date(o.createdAt), 'yyyy/MM/dd HH:mm')}
+                    {o.deliveryDate && <span className="text-amber-800 font-bold ml-2">配送 {o.deliveryDate} {o.deliveryTime}</span>}
+                    {o.deliveryMethod && <span className="ml-2">· {o.deliveryMethod}</span>}
+                    {o.paymentMethod && <span className="ml-2">· 付款 {o.paymentMethod}</span>}
                   </p>
                 </div>
-                <p className={`text-xl font-black ${cancelled ? 'text-stone-400 line-through' : 'text-emerald-700'}`}>${o.total}</p>
+                <p className={`text-xl font-black ${cancelled ? 'text-[#9a8674] line-through' : 'text-emerald-700'}`}>${o.total}</p>
                 <div className="flex flex-wrap gap-1">
                   {Object.entries(STATUS_MAP).map(([k, v]) => (
-                    <button key={k} onClick={() => changeStatus(o.id, k, o)} disabled={o.status === k}
-                      className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg border transition-colors disabled:opacity-40 ${o.status === k ? v.color : 'bg-stone-50 border-stone-200 text-stone-600 hover:border-amber-300'}`}>
+                    <button key={k} type="button" onClick={() => changeStatus(o.id, k, o)} disabled={o.status === k}
+                      className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg border transition-colors disabled:opacity-40 ${o.status === k ? v.color : 'bg-[#faf6f1] border-[#e8d9c8] text-[#6b5648] hover:border-amber-300'}`}>
                       {v.label}
                     </button>
                   ))}
                 </div>
-                <button onClick={() => setExpanded(isOpen ? null : o.id)} className="p-2 text-stone-400 hover:text-amber-600">
+                <button
+                  type="button"
+                  onClick={() => printOrderSlip(o, getSettingsSnapshot().storeName || '滷味小哥')}
+                  className="p-2 text-[#7a6555] hover:text-[var(--color-copper)]"
+                  title="列印出貨單"
+                >
+                  <Printer className="w-5 h-5" />
+                </button>
+                <button type="button" onClick={() => setExpanded(isOpen ? null : o.id)} className="p-2 text-[#9a8674] hover:text-[var(--color-copper)]">
                   {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                 </button>
               </div>
               {isOpen && (
-                <div className="px-4 pb-4 border-t border-stone-100 bg-stone-50/50 pt-3 space-y-2 text-sm">
-                  <p className="text-stone-600"><span className="font-bold">地址：</span>{o.shippingAddress}</p>
-                  {o.customerEmail && <p className="text-stone-600"><span className="font-bold">Email：</span>{o.customerEmail}</p>}
-                  <div className="bg-white rounded-xl p-3 border border-stone-100">
-                    <p className="text-xs font-bold text-stone-500 mb-2">訂購明細</p>
+                <div className="px-4 pb-4 border-t border-[#f0e6da] bg-[#faf6f1]/50 pt-3 space-y-3 text-sm">
+                  <p className="text-[#6b5648]"><span className="font-bold">地址：</span>{o.shippingAddress}</p>
+                  {o.customerEmail && <p className="text-[#6b5648]"><span className="font-bold">Email：</span>{o.customerEmail}</p>}
+                  <div className="bg-white rounded-xl p-3 border border-[#e8d9c8]">
+                    <p className="text-xs font-bold text-[#9a8674] mb-2">訂購明細</p>
                     {o.items?.map((i: any) => (
-                      <p key={i.productId} className="text-stone-700">{i.name} × {i.quantity}　<span className="text-amber-700 font-bold">${i.price * i.quantity}</span></p>
+                      <p key={i.productId} className="text-[var(--color-ink)]">{i.name} × {i.quantity}　<span className="text-[var(--color-copper)] font-bold">${i.price * i.quantity}</span></p>
                     ))}
+                  </div>
+                  <div className="bg-white rounded-xl p-3 border border-[#e8d9c8] space-y-2">
+                    <p className="text-xs font-bold text-[#9a8674]">內部備註（客人看不到）</p>
+                    <textarea
+                      value={noteValue}
+                      onChange={(e) => setNoteDrafts((prev) => ({ ...prev, [o.id]: e.target.value }))}
+                      rows={2}
+                      placeholder="例如：已電話確認、門口請放冷藏箱…"
+                      className="w-full bg-[#faf6f1] border border-[#e8d9c8] rounded-lg p-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--color-copper)]/30"
+                    />
+                    <button type="button" onClick={() => saveNote(o.id)} className="text-xs font-bold text-[var(--color-copper)] hover:underline">
+                      儲存備註
+                    </button>
                   </div>
                 </div>
               )}
@@ -212,7 +243,7 @@ export default function AdminOrders() {
           );
         })}
         {filtered.length === 0 && (
-          <div className="bg-white rounded-2xl border border-dashed border-stone-200 py-16 text-center text-stone-400">
+          <div className="surface-warm rounded-2xl border-dashed py-16 text-center text-[#9a8674]">
             <Package className="w-10 h-10 mx-auto mb-2 opacity-40" />
             <p className="font-bold">沒有符合條件的訂單</p>
           </div>

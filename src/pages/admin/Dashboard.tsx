@@ -148,22 +148,30 @@ export default function AdminDashboard() {
       </div>
 
       {/* 快捷入口 */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
         <Link to="/admin/orders" className="surface-warm rounded-xl px-3 py-3 hover:border-[var(--color-copper)]/40 transition-colors">
           <p className="text-[10px] font-bold text-[#9a8674]">待處理訂單</p>
-          <p className="text-lg font-black text-[var(--color-ink)]">{pending} <span className="text-xs font-bold text-[var(--color-copper)]">去處理 →</span></p>
+          <p className="text-lg font-black text-[var(--color-ink)]">{pending} <span className="text-xs font-bold text-[var(--color-copper)]">→</span></p>
         </Link>
         <Link to="/admin/products" className="surface-warm rounded-xl px-3 py-3 hover:border-[var(--color-copper)]/40 transition-colors">
-          <p className="text-[10px] font-bold text-[#9a8674]">商品管理</p>
-          <p className="text-lg font-black text-[var(--color-ink)]">{products.length} <span className="text-xs font-bold text-[var(--color-copper)]">去編輯 →</span></p>
-        </Link>
-        <Link to="/admin/site" className="surface-warm rounded-xl px-3 py-3 hover:border-[var(--color-copper)]/40 transition-colors">
-          <p className="text-[10px] font-bold text-[#9a8674]">前台管理</p>
-          <p className="text-sm font-black text-[var(--color-ink)] mt-1">輪播／結帳設定 →</p>
+          <p className="text-[10px] font-bold text-[#9a8674]">商品</p>
+          <p className="text-lg font-black text-[var(--color-ink)]">{products.length} <span className="text-xs font-bold text-[var(--color-copper)]">→</span></p>
         </Link>
         <Link to="/admin/members" className="surface-warm rounded-xl px-3 py-3 hover:border-[var(--color-copper)]/40 transition-colors">
           <p className="text-[10px] font-bold text-[#9a8674]">會員</p>
-          <p className="text-lg font-black text-[var(--color-ink)]">{members.length} <span className="text-xs font-bold text-[var(--color-copper)]">查看 →</span></p>
+          <p className="text-lg font-black text-[var(--color-ink)]">{members.length} <span className="text-xs font-bold text-[var(--color-copper)]">→</span></p>
+        </Link>
+        <Link to="/admin/site" className="surface-warm rounded-xl px-3 py-3 hover:border-[var(--color-copper)]/40 transition-colors">
+          <p className="text-[10px] font-bold text-[#9a8674]">店面設定</p>
+          <p className="text-sm font-black text-[var(--color-ink)] mt-1">輪播／時段 →</p>
+        </Link>
+        <Link to="/admin/reports" className="surface-warm rounded-xl px-3 py-3 hover:border-[var(--color-copper)]/40 transition-colors">
+          <p className="text-[10px] font-bold text-[#9a8674]">營運報表</p>
+          <p className="text-sm font-black text-[var(--color-ink)] mt-1">營收分析 →</p>
+        </Link>
+        <Link to="/admin/system" className="surface-warm rounded-xl px-3 py-3 hover:border-[var(--color-copper)]/40 transition-colors">
+          <p className="text-[10px] font-bold text-[#9a8674]">系統整合</p>
+          <p className="text-sm font-black text-[var(--color-ink)] mt-1">Email 通知 →</p>
         </Link>
       </div>
 

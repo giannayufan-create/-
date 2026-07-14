@@ -62,6 +62,8 @@ export interface Order {
   items: CartItem[];
   total: number;
   status: OrderStatus;
+  /** 商家內部備註（客人看不到） */
+  adminNote?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -132,6 +134,12 @@ export interface SiteSettings {
   paymentCreditEnabled: boolean;
   /** 後台可開關的配送方式 */
   deliveryPersonalEnabled: boolean;
+  /** 配送時段：開始／結束小時（0–23）、間隔分鐘、可預約天數、提前天數 */
+  deliveryStartHour: number;
+  deliveryEndHour: number;
+  deliverySlotMinutes: number;
+  deliveryMaxDays: number;
+  deliveryLeadDays: number;
   pageTexts: PageTexts;
 }
 
